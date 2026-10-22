@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CodeAuthApi } from '@/providers/registry/serverProviderTypes';
-import type { BasicAuth, ProviderAuth } from '@/providers/contracts/Server';
+import type { BasicAuth, CustomHeader, ProviderAuth } from '@/providers/contracts/Server';
 import { codeAuthServerFailure } from '@/providers/registry/codeAuthServerError';
 
 type CodeAuthPhase =
@@ -30,6 +30,7 @@ type Options = {
   codeAuth: CodeAuthApi | undefined;
   serverUrl: string;
   basicAuth?: BasicAuth;
+  customHeader?: CustomHeader;
 };
 
 /**
@@ -51,7 +52,7 @@ type Options = {
  *   and proxy credentials, and an interval that survives unmount keeps hitting
  *   a server for a flow nobody is watching.
  */
-export function useCodeAuth({ codeAuth, serverUrl, basicAuth }: Options) {
+export function useCodeAuth({ codeAuth, serverUrl, basicAuth, customHeader }: Options) {
   const [phase, setPhase] = useState<CodeAuthPhase>({ status: 'idle' });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -61,6 +62,8 @@ export function useCodeAuth({ codeAuth, serverUrl, basicAuth }: Options) {
   // proxy field changes would restart the flow under the user.
   const basicAuthRef = useRef(basicAuth);
   basicAuthRef.current = basicAuth;
+  const customHeaderRef = useRef(customHeader);
+  customHeaderRef.current = customHeader;
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
@@ -84,7 +87,11 @@ export function useCodeAuth({ codeAuth, serverUrl, basicAuth }: Options) {
 
     let handle: unknown;
     try {
-      const begun = await codeAuth.begin({ serverUrl, basicAuth: basicAuthRef.current });
+      const begun = await codeAuth.begin({
+        serverUrl,
+        basicAuth: basicAuthRef.current,
+        customHeader: customHeaderRef.current,
+      });
       handle = begun.handle;
       setPhase({ status: 'waiting', code: begun.code });
     } catch (err: any) {
@@ -107,6 +114,7 @@ export function useCodeAuth({ codeAuth, serverUrl, basicAuth }: Options) {
           serverUrl,
           handle,
           basicAuth: basicAuthRef.current,
+          customHeader: customHeaderRef.current,
         });
       } catch (err) {
         // Approval already happened and the server is what said no, so waiting

@@ -54,4 +54,25 @@ describe('createMediaBrowserClient', () => {
     const client = createMediaBrowserClient(baseConfig, JELLYFIN_BRAND);
     await expect(client.request('/Items')).resolves.toEqual({});
   });
+
+  it('sends the configured custom header beside the brand credentials', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      json: async () => ({}),
+    }) as unknown as typeof fetch;
+
+    const client = createMediaBrowserClient(
+      { ...baseConfig, customHeader: { name: 'X-Api-Key', value: 'proxy-secret' } },
+      JELLYFIN_BRAND
+    );
+    await client.request('/Items');
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(init.headers).toMatchObject({
+      'X-Api-Key': 'proxy-secret',
+      Authorization: expect.stringContaining('MediaBrowser Client='),
+    });
+  });
 });

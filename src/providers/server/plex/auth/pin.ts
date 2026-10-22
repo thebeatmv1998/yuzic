@@ -1,7 +1,7 @@
 import { fetchWithTimeout } from '@/providers/http/fetchWithTimeout';
 import { createPlexClient, plexHeaders } from '../client';
 import type { PlexPinResponse } from '../types';
-import type { BasicAuth } from '@/providers/contracts/Server';
+import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
 import { codeAuthServerError } from '@/providers/registry/codeAuthServerError';
 
 const PLEX_ACCOUNT = 'https://plex.tv';
@@ -36,7 +36,12 @@ export async function beginPlexPin(_serverUrl: string, _basicAuth?: BasicAuth) {
   return { code: pin.code, handle: String(pin.id) };
 }
 
-export async function pollPlexPin(handle: string, serverUrl: string, basicAuth?: BasicAuth) {
+export async function pollPlexPin(
+  handle: string,
+  serverUrl: string,
+  basicAuth?: BasicAuth,
+  customHeader?: CustomHeader
+) {
   const pin = await accountRequest<PlexPinResponse>(`/api/v2/pins/${encodeURIComponent(handle)}`);
   if (!pin.authToken) return null;
   // Account approval proves only that Plex issued a token. The selected server
@@ -47,7 +52,12 @@ export async function pollPlexPin(handle: string, serverUrl: string, basicAuth?:
   // and not the code. It is marked, because the caller retries an unmarked
   // throw until the flow times out and blames the code for it.
   try {
-    await createPlexClient({ serverUrl, token: pin.authToken, basicAuth }).request('/library/sections');
+    await createPlexClient({
+      serverUrl,
+      token: pin.authToken,
+      basicAuth,
+      customHeader,
+    }).request('/library/sections');
     const user = await accountRequest<PlexUserResponse>('/api/v2/user', {
       headers: { 'X-Plex-Token': pin.authToken },
     });

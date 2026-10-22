@@ -1,5 +1,6 @@
-import { buildTokenParams } from "../client";
+import { buildTokenParams, subsonicRequestHeaders } from "../client";
 import { SubsonicResponse } from "../types";
+import type { BasicAuth, CustomHeader } from "@/providers/contracts/Server";
 import i18n from '@/i18n';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
@@ -14,7 +15,8 @@ export async function connect(
   serverUrl: string,
   username: string,
   password: string,
-  basicAuth?: { username: string; password?: string }
+  basicAuth?: BasicAuth,
+  customHeader?: CustomHeader
 ): Promise<ConnectResult> {
   if (!serverUrl || !username || !password) {
     return { success: false, message: i18n.t('onboarding.connect.missingCredentials') };
@@ -31,12 +33,9 @@ export async function connect(
     f: "json",
   });
   const url = `${cleanUrl}/rest/getMusicFolders.view?${params}`;
-  const headers: Record<string, string> = basicAuth
-    ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) }
-    : {};
 
   try {
-    const res = await serverFetch(url, { headers });
+    const res = await serverFetch(url, { headers: subsonicRequestHeaders(basicAuth, customHeader) });
     if (!res.ok) {
       return { success: false, message: i18n.t('onboarding.connect.serverErrorStatus', { status: res.status }) };
     }

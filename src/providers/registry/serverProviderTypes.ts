@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 
 import type { CoverSource } from '@/domain/entities/Cover';
-import type { BasicAuth, ProviderAuth, Server, ServerType } from '@/providers/contracts/Server';
+import type { BasicAuth, CustomHeader, ProviderAuth, Server, ServerType } from '@/providers/contracts/Server';
 import type { ApiAdapter, Library } from '@/providers/contracts/ServerAdapter';
 import type { AddressProbe } from '@/providers/server/addressProbe';
 
@@ -66,7 +66,11 @@ export type CodeAuthApi = {
    * a pin id paired with its code, and the screen should be able to hold
    * either without knowing which it has.
    */
-  begin(input: { serverUrl: string; basicAuth?: BasicAuth }): Promise<{
+  begin(input: {
+    serverUrl: string;
+    basicAuth?: BasicAuth;
+    customHeader?: CustomHeader;
+  }): Promise<{
     code: string;
     handle: unknown;
   }>;
@@ -82,6 +86,7 @@ export type CodeAuthApi = {
     serverUrl: string;
     handle: unknown;
     basicAuth?: BasicAuth;
+    customHeader?: CustomHeader;
   }): Promise<{ auth: ProviderAuth; username: string } | null>;
   /** How often to poll, in milliseconds. */
   pollIntervalMs: number;
@@ -132,13 +137,15 @@ export type ServerProviderConfig = {
     url: string,
     username: string,
     auth: ProviderAuth,
-    basicAuth?: BasicAuth
+    basicAuth?: BasicAuth,
+    customHeader?: CustomHeader
   ) => Promise<boolean>;
   connect: (
     url: string,
     username: string,
     password: string,
-    basicAuth?: BasicAuth
+    basicAuth?: BasicAuth,
+    customHeader?: CustomHeader
   ) => Promise<ConnectResult>;
   createAdapter: (server: Server) => ApiAdapter;
   buildCoverUrl: (server: Server, cover: CoverSource, px: number) => string | null;

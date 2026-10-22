@@ -1,4 +1,5 @@
-import type { BasicAuth } from '@/providers/contracts/Server';
+import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
+import { customHeaderForRequest } from '@/providers/http/customHeader';
 import { getInstallationId } from '@/providers/server/installationId';
 import { tryWithFailover, orderedUrls } from '@/providers/http/urlFailover';
 import { serverFetch } from '@/features/mtls/serverFetch';
@@ -13,6 +14,8 @@ type PlexClientConfig = {
   fallbackUrls?: string[];
   token?: string;
   basicAuth?: BasicAuth;
+  /** Optional extra header sent on every server request, e.g. a proxy API key. */
+  customHeader?: CustomHeader;
 };
 
 const PRODUCT = 'Yuzic';
@@ -38,7 +41,11 @@ export function plexBasicAuthHeader(basicAuth?: BasicAuth): Record<string, strin
  * persistent client id is required by Plex and is deliberately the same
  * per-install identity MediaBrowser uses, never a launch-generated id.
  */
-export function plexHeaders(token?: string, basicAuth?: BasicAuth): Record<string, string> {
+export function plexHeaders(
+  token?: string,
+  basicAuth?: BasicAuth,
+  customHeader?: CustomHeader
+): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-Plex-Product': PRODUCT,
@@ -47,7 +54,13 @@ export function plexHeaders(token?: string, basicAuth?: BasicAuth): Record<strin
     'X-Plex-Client-Identifier': getInstallationId(),
   };
   if (token) headers['X-Plex-Token'] = token;
-  return { ...headers, ...plexBasicAuthHeader(basicAuth) };
+  // Custom first, then the app's own identity and credentials: a colliding
+  // name must never displace the token this client was built around.
+  return {
+    ...customHeaderForRequest(customHeader),
+    ...headers,
+    ...plexBasicAuthHeader(basicAuth),
+  };
 }
 
 export function createPlexClient(config: PlexClientConfig) {
@@ -64,7 +77,10 @@ export function createPlexClient(config: PlexClientConfig) {
     const attempt = async (url: string) => {
       const response = await serverFetch(`${url}${path}`, {
         ...init,
-        headers: { ...plexHeaders(config.token, config.basicAuth), ...init.headers },
+        headers: {
+          ...plexHeaders(config.token, config.basicAuth, config.customHeader),
+          ...init.headers,
+        },
       });
       if (!response.ok) throw new PlexRequestError(response.status);
       return response.text();

@@ -1,4 +1,6 @@
 import type { AudioQuality, PreferredCodec } from '@/domain/playback/AudioFormat';
+import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
+import { customHeaderForRequest } from '@/providers/http/customHeader';
 import { qualityToStreamParams } from '@/providers/server/streamQuality';
 import { tryWithFailover, orderedUrls, UrlTimeoutError, isAbortError } from '@/providers/http/urlFailover';
 import { serverFetch } from '@/features/mtls/serverFetch';
@@ -22,6 +24,8 @@ interface NavidromeClientConfig {
   password: string;
   defaultParams?: Record<string, string | number>;
   basicAuth?: { username: string; password?: string };
+  /** Optional extra header sent on every request, e.g. a proxy's API key. */
+  customHeader?: CustomHeader;
 }
 
 const API_VERSION = "1.16.0";
@@ -92,15 +96,37 @@ function buildParams(
   return params.toString();
 }
 
+/**
+ * The headers a Subsonic request carries beside its query parameters.
+ *
+ * Built in one place because the login call, the connection test and the
+ * client all need the same pair, and three copies is how one of them ends up
+ * without the custom header. Custom first, then Basic auth: a colliding name
+ * can only be one the validator lets through, and the proxy credentials are
+ * the more specific answer.
+ */
+export function subsonicRequestHeaders(
+  basicAuth?: BasicAuth,
+  customHeader?: CustomHeader
+): Record<string, string> {
+  return {
+    ...customHeaderForRequest(customHeader),
+    ...(basicAuth
+      ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) }
+      : {}),
+  };
+}
+
 export function createNavidromeClient(config: NavidromeClientConfig) {
-  const { serverUrl, serverId, fallbackUrls, username, password, defaultParams, basicAuth } = config;
+  const { serverUrl, serverId, fallbackUrls, username, password, defaultParams, basicAuth, customHeader } = config;
   const baseUrl = serverUrl.replace(/\/+$/, "");
   const failoverHint = serverId
     ? { id: serverId, serverUrl: baseUrl, fallbackUrls }
     : null;
-  const proxyHeader: Record<string, string> = basicAuth
-    ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) }
-    : {};
+  // The custom header goes in first so the credentials this client is built
+  // around always win a name collision. Validation refuses `Authorization`
+  // outright, so that ordering is defence in depth rather than the only guard.
+  const baseHeaders = subsonicRequestHeaders(basicAuth, customHeader);
 
   let extensions: Promise<Set<string>> | null = null;
   // Token auth until the server says it cannot take it, then the password for
@@ -165,7 +191,7 @@ export function createNavidromeClient(config: NavidromeClientConfig) {
       try {
         const res = await serverFetch(asForm ? `${url}/rest/${endpoint}` : `${url}/rest/${endpoint}?${params}`, {
           method: options.method ?? "GET",
-          headers: asForm ? { ...proxyHeader, "Content-Type": "application/x-www-form-urlencoded" } : proxyHeader,
+          headers: asForm ? { ...baseHeaders, "Content-Type": "application/x-www-form-urlencoded" } : baseHeaders,
           body: asForm ? params : undefined,
           signal: controller.signal,
         });

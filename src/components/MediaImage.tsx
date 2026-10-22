@@ -4,7 +4,13 @@ import { Text } from '@/components/Text';
 import { fontScaleCap } from '@/constants/design';
 import TurboImage from 'react-native-turbo-image';
 import { useSelector } from 'react-redux';
-import { buildCover, buildCoverCacheKey, coverIdentity, DRAWN_COVER } from '@/providers/registry/covers';
+import {
+  buildCover,
+  buildCoverCacheKey,
+  buildCoverRequestHeaders,
+  coverIdentity,
+  DRAWN_COVER,
+} from '@/providers/registry/covers';
 import { CoverSource } from '@/domain/entities/Cover';
 import ThemedHeartCover from '@/components/ThemedHeartCover';
 import ThemedRadioCover from '@/components/ThemedRadioCover';
@@ -78,6 +84,12 @@ export function MediaImage({
     void activeServerId;
     return buildCoverCacheKey(resolved, size);
   }, [resolved, size, activeServerId]);
+  // The same header the API clients send, for a server that authenticates
+  // every request. Undefined for artwork hosted anywhere else.
+  const requestHeaders = useMemo(() => {
+    void activeServerId;
+    return buildCoverRequestHeaders(resolved);
+  }, [resolved, activeServerId]);
   const drawn = useMemo(() => {
     const { seed, name } = placeholderIdentity(resolved);
     return coverPlaceholder(seed, name, isDarkMode ? 'dark' : 'light');
@@ -153,7 +165,11 @@ export function MediaImage({
   return (
     <View style={[style, { overflow: 'hidden', backgroundColor: colors.card }]}>
       <TurboImage
-        source={{ uri: sourceUri, cacheKey: cacheKey ?? sourceUri }}
+        source={{
+          uri: sourceUri,
+          cacheKey: cacheKey ?? sourceUri,
+          ...(requestHeaders ? { headers: requestHeaders } : {}),
+        }}
         style={{ width: '100%', height: '100%' }}
         resizeMode="cover"
         cachePolicy={IMAGE_CACHE_POLICY}

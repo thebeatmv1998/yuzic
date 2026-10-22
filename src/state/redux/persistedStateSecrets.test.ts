@@ -31,6 +31,7 @@ import { setCredential, _clearCredentialCache } from '@/state/credentialCache';
 const SENTINEL_PASSWORD = 'SENTINEL-PASSWORD-1';
 const SENTINEL_TOKEN = 'SENTINEL-TOKEN-1';
 const SENTINEL_PROXY_PASSWORD = 'SENTINEL-PROXY-PASSWORD-1';
+const SENTINEL_CUSTOM_HEADER_VALUE = 'SENTINEL-CUSTOM-HEADER-VALUE-1';
 const SENTINEL_LISTENBRAINZ_TOKEN = 'SENTINEL-LISTENBRAINZ-TOKEN-1';
 const SENTINEL_AUDIOMUSE_TOKEN = 'SENTINEL-AUDIOMUSE-TOKEN-1';
 const SENTINEL_LIDARR_KEY = 'SENTINEL-LIDARR-KEY-1';
@@ -40,6 +41,7 @@ const ALL_SENTINELS = [
   SENTINEL_PASSWORD,
   SENTINEL_TOKEN,
   SENTINEL_PROXY_PASSWORD,
+  SENTINEL_CUSTOM_HEADER_VALUE,
   SENTINEL_LISTENBRAINZ_TOKEN,
   SENTINEL_AUDIOMUSE_TOKEN,
   SENTINEL_LIDARR_KEY,
@@ -73,7 +75,8 @@ describe('no secret reaches persisted Redux state', () => {
     const sanitized = await saveServerCredentials(
       SERVER_ID,
       { password: SENTINEL_PASSWORD, token: SENTINEL_TOKEN, userId: 'user-1' },
-      { username: 'proxy-user', password: SENTINEL_PROXY_PASSWORD }
+      { username: 'proxy-user', password: SENTINEL_PROXY_PASSWORD },
+      { name: 'X-Yuzic-Test', value: SENTINEL_CUSTOM_HEADER_VALUE }
     );
     store.dispatch(addServer({
       id: SERVER_ID,
@@ -82,6 +85,7 @@ describe('no secret reaches persisted Redux state', () => {
       username: 'ari',
       auth: sanitized.auth,
       basicAuth: sanitized.basicAuth,
+      customHeader: sanitized.customHeader,
       isAuthenticated: true,
     }));
     store.dispatch(setActiveServer(SERVER_ID));
@@ -118,6 +122,9 @@ describe('no secret reaches persisted Redux state', () => {
     // that captured nothing would prove nothing.
     expect(serialized).toContain('media.example');
     expect(serialized).toContain('proxy-user');
+    // The header *name* is not a secret and has to survive so the settings
+    // card can show what is configured; only the value must never appear.
+    expect(serialized).toContain('X-Yuzic-Test');
     expect(serialized).toContain('user-1');
     expect(serialized).toContain('lb-user');
     expect(serialized).toContain('audiomuse.example');

@@ -1,4 +1,4 @@
-import type { BasicAuth, ProviderAuth, Server } from '@/providers/contracts/Server';
+import type { BasicAuth, CustomHeader, ProviderAuth, Server } from '@/providers/contracts/Server';
 import { getCredentials, setCredential, forgetCredentials, type CredentialBundle } from '@/state/credentialCache';
 import type { CredentialScope } from '@/state/credentials';
 import { listenBrainzCredentialScope } from '@/state/redux/selectors/listenbrainzSelectors';
@@ -53,19 +53,52 @@ function splitSecretAuth(auth: ProviderAuth | undefined): {
 export async function saveServerCredentials(
   serverId: string,
   auth: ProviderAuth | undefined,
-  basicAuth: BasicAuth | undefined
-): Promise<{ auth: ProviderAuth; basicAuth: BasicAuth | undefined }> {
+  basicAuth: BasicAuth | undefined,
+  customHeader?: CustomHeader
+): Promise<{
+  auth: ProviderAuth;
+  basicAuth: BasicAuth | undefined;
+  customHeader: CustomHeader | undefined;
+}> {
   const { publicAuth, secrets } = splitSecretAuth(auth);
   const scope = serverCredentialScope(serverId);
-  await Promise.all([
+  const [, , , sanitizedCustomHeader] = await Promise.all([
     secrets.password !== undefined ? setCredential(scope, 'password', secrets.password) : Promise.resolve(),
     secrets.token !== undefined ? setCredential(scope, 'token', secrets.token) : Promise.resolve(),
     basicAuth?.password ? setCredential(scope, 'proxyPassword', basicAuth.password) : Promise.resolve(),
+    saveServerCustomHeader(serverId, customHeader),
   ]);
   return {
     auth: publicAuth,
     basicAuth: basicAuth ? { username: basicAuth.username } : undefined,
+    customHeader: sanitizedCustomHeader,
   };
+}
+
+/**
+ * Writes (or clears) one server's custom header value and returns the half
+ * Redux may keep.
+ *
+ * Separate from `saveServerCredentials` because this is also what the Server
+ * settings card calls when the header is changed long after onboarding: the
+ * value goes to the keystore, the name goes into the `Server` record, and the
+ * two are updated together so a rename cannot leave the old value behind.
+ * Passing null (or a pair without a value) deletes the keystore entry rather
+ * than storing an empty one.
+ */
+export async function saveServerCustomHeader(
+  serverId: string,
+  header: CustomHeader | null | undefined
+): Promise<CustomHeader | undefined> {
+  const scope = serverCredentialScope(serverId);
+  const name = header?.name.trim();
+  const value = header?.value?.trim();
+  if (!name || !value) {
+    await setCredential(scope, 'customHeaderValue', '');
+    return undefined;
+  }
+  await setCredential(scope, 'customHeaderValue', value);
+  return { name };
 }
 
 /**
@@ -82,6 +115,7 @@ export async function saveServerCredentials(
  */
 export function withServerCredentials(server: Server): Server {
   const creds: CredentialBundle = getCredentials(serverCredentialScope(server.id));
+  const customHeaderValue = creds.customHeaderValue ?? server.customHeader?.value;
   return {
     ...server,
     auth: {
@@ -89,9 +123,22 @@ export function withServerCredentials(server: Server): Server {
       ...(creds.password !== undefined ? { password: creds.password } : {}),
       ...(creds.token !== undefined ? { token: creds.token } : {}),
     },
+    // The inline fallbacks keep this idempotent: composing an already-composed
+    // server (or a test fixture carrying its password directly) must not blank
+    // a value just because the keystore has nothing under that id. A record
+    // read from Redux never carries either value, so this adds no exposure.
     basicAuth: server.basicAuth
-      ? { ...server.basicAuth, password: creds.proxyPassword ?? '' }
+      ? {
+          ...server.basicAuth,
+          password: creds.proxyPassword ?? server.basicAuth.password ?? '',
+        }
       : undefined,
+    // No stored value means no header at all: sending the name with an empty
+    // value would be a different request, and one no server asked for.
+    customHeader:
+      server.customHeader && customHeaderValue
+        ? { ...server.customHeader, value: customHeaderValue }
+        : undefined,
   };
 }
 

@@ -22,15 +22,15 @@ export const embyProvider: ServerProviderConfig = {
   listLibraries: (server) => getMusicLibraries(server),
   addressHintKey: 'onboarding.address.hintEmby',
   probeAddress: (url) => probeMediaBrowserAddress(EMBY_BRAND, url),
-  ping: async (url, username, auth, basicAuth) => {
+  ping: async (url, username, auth, basicAuth, customHeader) => {
     const token = auth.token as string;
     const userId = auth.userId as string;
     if (!token || !userId) return false;
-    const client = createEmbyClient({ serverUrl: url, token, userId, basicAuth });
+    const client = createEmbyClient({ serverUrl: url, token, userId, basicAuth, customHeader });
     return pingMediaBrowser(client);
   },
-  connect: async (url, username, password, basicAuth) => {
-    const result = await connectMediaBrowser(EMBY_BRAND, url, username, password, basicAuth);
+  connect: async (url, username, password, basicAuth, customHeader) => {
+    const result = await connectMediaBrowser(EMBY_BRAND, url, username, password, basicAuth, customHeader);
     if (!result.success) {
       return {
         success: false,

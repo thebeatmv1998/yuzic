@@ -64,6 +64,23 @@
         "duplicatePrimaryError": "C’est déjà l’URL principale.",
         "duplicateError": "Cette URL est déjà dans la liste."
       },
+      "customHeader": {
+        "title": "En-tête de requête personnalisé",
+        "description": "Un en-tête envoyé avec chaque requête à ce serveur, y compris les pochettes et les flux audio. La valeur reste dans le trousseau de l’appareil.",
+        "namePlaceholder": "Nom de l’en-tête (ex. X-Api-Key)",
+        "valuePlaceholder": "Valeur de l’en-tête",
+        "valueStoredPlaceholder": "Enregistrée — laissez vide pour la conserver",
+        "save": "Enregistrer l’en-tête",
+        "remove": "Supprimer l’en-tête",
+        "saveFailed": "Impossible d’enregistrer l’en-tête.",
+        "insecureWarning": "Cet en-tête est envoyé sur une connexion HTTP non chiffrée et peut être lu sur le réseau. Utilisez HTTPS.",
+        "missingName": "Saisissez un nom d’en-tête.",
+        "missingValue": "Saisissez une valeur d’en-tête.",
+        "invalidName": "Le nom d’en-tête ne peut contenir que des lettres, des chiffres et !#$%&'*+-.^_`|~",
+        "reservedName": "Cet en-tête est géré par l’application et ne peut pas être remplacé.",
+        "invalidValue": "La valeur de l’en-tête contient des caractères non autorisés.",
+        "tooLong": "Cet en-tête est trop long."
+      },
       "privacyTitle": "Confidentialité",
       "queueSync": "Synchroniser la file d’attente entre appareils",
       "queueSyncDescription": "Reprendre la lecture sur vos appareils.",
@@ -839,6 +856,19 @@
         "usernamePlaceholder": "Nom d’utilisateur du proxy",
         "passwordPlaceholder": "Mot de passe du proxy",
         "insecureWarning": "Les identifiants du proxy peuvent être exposés sur une connexion HTTP non sécurisée. Utilisez HTTPS."
+      },
+      "customHeader": {
+        "toggle": "En-tête de requête personnalisé",
+        "helper": "Envoyé avec chaque requête à ce serveur. La valeur est stockée dans le trousseau de l’appareil.",
+        "namePlaceholder": "Nom de l’en-tête (ex. X-Api-Key)",
+        "valuePlaceholder": "Valeur de l’en-tête",
+        "insecureWarning": "Cet en-tête est envoyé sur une connexion HTTP non chiffrée et peut être lu sur le réseau. Utilisez HTTPS.",
+        "missingName": "Saisissez un nom d’en-tête.",
+        "missingValue": "Saisissez une valeur d’en-tête.",
+        "invalidName": "Le nom d’en-tête ne peut contenir que des lettres, des chiffres et !#$%&'*+-.^_`|~",
+        "reservedName": "Cet en-tête est géré par l’application et ne peut pas être remplacé.",
+        "invalidValue": "La valeur de l’en-tête contient des caractères non autorisés.",
+        "tooLong": "Cet en-tête est trop long."
       },
       "codeAuth": {
         "enterCode": "Saisissez ce code pour vous connecter",

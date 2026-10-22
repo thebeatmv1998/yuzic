@@ -64,6 +64,23 @@
         "duplicatePrimaryError": "これはすでにプライマリURLです。",
         "duplicateError": "このURLはすでにリストにあります。"
       },
+      "customHeader": {
+        "title": "カスタムリクエストヘッダー",
+        "description": "このサーバーへのすべてのリクエスト（カバーアートとオーディオストリームを含む）に送信するヘッダーです。値は端末のキーチェーンに保存されます。",
+        "namePlaceholder": "ヘッダー名（例: X-Api-Key）",
+        "valuePlaceholder": "ヘッダーの値",
+        "valueStoredPlaceholder": "保存済み — 空欄のままにすると保持されます",
+        "save": "ヘッダーを保存",
+        "remove": "ヘッダーを削除",
+        "saveFailed": "ヘッダーを保存できませんでした。",
+        "insecureWarning": "このヘッダーは暗号化されていない HTTP 接続で送信されるため、ネットワーク上で読み取られる可能性があります。HTTPS を使用してください。",
+        "missingName": "ヘッダー名を入力してください。",
+        "missingValue": "ヘッダーの値を入力してください。",
+        "invalidName": "ヘッダー名には英数字と !#$%&'*+-.^_`|~ のみ使用できます。",
+        "reservedName": "このヘッダーはアプリが管理しているため上書きできません。",
+        "invalidValue": "ヘッダーの値に使用できない文字が含まれています。",
+        "tooLong": "ヘッダーが長すぎます。"
+      },
       "privacyTitle": "プライバシー",
       "queueSync": "デバイス間でキューを同期",
       "queueSyncDescription": "複数の端末で再生を引き継ぎます。",
@@ -838,6 +855,19 @@
         "usernamePlaceholder": "プロキシのユーザー名",
         "passwordPlaceholder": "プロキシのパスワード",
         "insecureWarning": "安全でない HTTP 接続ではプロキシ認証情報が漏洩する可能性があります。HTTPS を使用してください。"
+      },
+      "customHeader": {
+        "toggle": "カスタムリクエストヘッダー",
+        "helper": "このサーバーへのすべてのリクエストに送信されます。値は端末のキーチェーンに保存されます。",
+        "namePlaceholder": "ヘッダー名（例: X-Api-Key）",
+        "valuePlaceholder": "ヘッダーの値",
+        "insecureWarning": "このヘッダーは暗号化されていない HTTP 接続で送信されるため、ネットワーク上で読み取られる可能性があります。HTTPS を使用してください。",
+        "missingName": "ヘッダー名を入力してください。",
+        "missingValue": "ヘッダーの値を入力してください。",
+        "invalidName": "ヘッダー名には英数字と !#$%&'*+-.^_`|~ のみ使用できます。",
+        "reservedName": "このヘッダーはアプリが管理しているため上書きできません。",
+        "invalidValue": "ヘッダーの値に使用できない文字が含まれています。",
+        "tooLong": "ヘッダーが長すぎます。"
       },
       "codeAuth": {
         "enterCode": "このコードを入力してサインイン",

@@ -61,3 +61,21 @@ describe('Plex client failover', () => {
     expect(client.buildImageUrl('/library/metadata/1/thumb')).toContain('https://tailnet.example/library/metadata/1/thumb');
   });
 });
+
+describe('Plex client custom header', () => {
+  it('sends the configured header without displacing the Plex token', async () => {
+    mockServerFetch.mockResolvedValueOnce({ ok: true, text: async () => '{}' });
+    const client = createPlexClient({
+      serverUrl: 'https://home.example',
+      token: 'plex-token',
+      customHeader: { name: 'X-Api-Key', value: 'proxy-secret' },
+    });
+
+    await client.request('/library/sections');
+
+    expect(mockServerFetch.mock.calls[0][1].headers).toMatchObject({
+      'X-Api-Key': 'proxy-secret',
+      'X-Plex-Token': 'plex-token',
+    });
+  });
+});

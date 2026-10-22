@@ -1,5 +1,5 @@
 import { Server } from '@/providers/contracts/Server';
-import { buildTokenParams } from '../client';
+import { buildTokenParams, subsonicRequestHeaders } from '../client';
 import { SubsonicResponse } from '../types';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
@@ -16,7 +16,9 @@ export async function getMusicFolders(server: Server): Promise<{ id: string; nam
   const params = new URLSearchParams({ u, t, s, v: API_VERSION, c: CLIENT_NAME, f: 'json' });
 
   try {
-    const res = await serverFetch(`${cleanUrl}/rest/getMusicFolders.view?${params}`);
+    const res = await serverFetch(`${cleanUrl}/rest/getMusicFolders.view?${params}`, {
+      headers: subsonicRequestHeaders(undefined, server.customHeader),
+    });
     if (!res.ok) return [];
     const data: SubsonicResponse = await res.json();
     const response = data['subsonic-response'];

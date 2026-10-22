@@ -19,6 +19,20 @@ export interface BasicAuth {
   password?: string;
 }
 
+/**
+ * One extra header sent with every request to this server.
+ *
+ * `value` is a secret — a proxy's API key, an access token, a shared secret —
+ * so the persisted `Server` carries only `name`. The value lives in the
+ * keystore under `customHeaderValue` and is merged back for one live call by
+ * `withServerCredentials`, exactly like `BasicAuth.password`.
+ */
+export interface CustomHeader {
+  name: string;
+  /** Present only on a composed server; see above. */
+  value?: string;
+}
+
 export interface Server {
   id: string;
   type: ServerType;
@@ -42,5 +56,10 @@ export interface Server {
    */
   auth?: ProviderAuth;
   basicAuth?: BasicAuth;
+  /**
+   * Non-secret half of an optional custom request header. Sent on every
+   * request to this server, including stream and artwork fetches.
+   */
+  customHeader?: CustomHeader;
   isAuthenticated: boolean;
 }

@@ -1,6 +1,8 @@
 import type { Server } from '@/providers/contracts/Server';
 import type { Provenance } from '@/domain/identity/Provenance';
 import { SERVER_PROVIDERS } from '@/providers/registry/serverConnections';
+import { withServerCredentials } from '@/providers/registry/serverCredentials';
+import { customHeaderForRequest } from '@/providers/http/customHeader';
 
 /**
  * The ephemeral request headers a track needs to be fetched, kept off the URL
@@ -19,12 +21,12 @@ const EMPTY: RequestHeaders = {};
 /**
  * Headers for one song against the active server.
  *
- * Only a Plex server with Basic auth configured returns anything: those sit
- * behind a reverse proxy that authenticates every request — the stream and the
- * artwork alike — with `Authorization: Basic`, and a signed-URL/token provider
- * (Navidrome, Jellyfin, Emby, a token-only Plex) must be left untouched. The
- * same header value covers both fetches, but is handed back under the two
- * distinct fields so the engine wires them independently.
+ * Two things can produce headers: a custom request header configured for the
+ * server, and a provider that declares its own media auth — today Plex behind
+ * a reverse proxy, which needs `Authorization: Basic` on the stream and the
+ * artwork alike. Every other token/signed-URL server returns nothing, and is
+ * left untouched. The same values cover both fetches, but are handed back
+ * under the two distinct fields so the engine wires them independently.
  *
  * A song already resolved to a local `file://` path needs no credentials, so
  * it is skipped even on a Basic-auth Plex server. A song that names a different
@@ -49,8 +51,17 @@ export function mediaHeadersForSong(
     return EMPTY;
   }
   if (!server) return EMPTY;
-  // Only a server type that declares media auth headers adds any.
-  const auth = SERVER_PROVIDERS[server.type]?.mediaAuthHeaders?.(server);
-  if (!auth) return EMPTY;
-  return { headers: auth, artworkHeaders: auth };
+  // The Redux record carries the custom header's name but not its value; the
+  // keystore copy is merged in for this call, the same way every API client is
+  // built. `mediaAuthHeaders` then contributes whatever the provider itself
+  // requires (Plex's proxy Basic auth today).
+  const liveServer = withServerCredentials(server);
+  const headers: Record<string, string> = {
+    ...customHeaderForRequest(liveServer.customHeader),
+    ...(SERVER_PROVIDERS[server.type]?.mediaAuthHeaders?.(liveServer) ?? {}),
+  };
+  if (Object.keys(headers).length === 0) return EMPTY;
+  // The same header value covers both fetches, but is handed back under the
+  // two distinct fields so the engine wires them independently.
+  return { headers, artworkHeaders: headers };
 }

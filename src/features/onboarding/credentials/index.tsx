@@ -13,12 +13,14 @@ import { notify } from '@/components/toast';
 import { nanoid } from '@reduxjs/toolkit';
 import { SERVER_PROVIDERS } from '@/providers/registry/serverConnections';
 import { saveServerCredentials } from '@/providers/registry/serverCredentials';
-import { ServerType, BasicAuth, type ProviderAuth } from '@/providers/contracts/Server';
+import { ServerType, BasicAuth, type CustomHeader, type ProviderAuth } from '@/providers/contracts/Server';
+import { validateCustomHeader } from '@/providers/http/customHeader';
 import { useTranslation } from 'react-i18next';
 import SpinningLoaderCircle from '@/components/SpinningLoaderCircle';
 import Touchable from '@/components/Touchable';
 import { useRadius } from '@/features/theme/useRadius';
 import { useCodeAuth } from './useCodeAuth';
+import CustomHeaderSection from './CustomHeaderSection';
 
 export default function Credentials() {
     const { t } = useTranslation();
@@ -38,6 +40,10 @@ export default function Credentials() {
     const [proxyUsername, setProxyUsername] = useState('');
     const [proxyPassword, setProxyPassword] = useState('');
 
+    const [customHeaderExpanded, setCustomHeaderExpanded] = useState(false);
+    const [customHeaderName, setCustomHeaderName] = useState('');
+    const [customHeaderValue, setCustomHeaderValue] = useState('');
+
     const passwordRef = useRef<TextInput>(null);
     const proxyUsernameRef = useRef<TextInput>(null);
     const proxyPasswordRef = useRef<TextInput>(null);
@@ -48,20 +54,56 @@ export default function Credentials() {
         return u && p ? { username: u, password: p } : undefined;
     };
 
+    /**
+     * The header to send, or undefined when there is none or the pair is
+     * invalid. Callers that submit validate first; this is for the code-auth
+     * hook, which runs on its own clock.
+     */
+    const buildCustomHeader = (): CustomHeader | undefined => {
+        const result = validateCustomHeader(customHeaderName, customHeaderValue);
+        return result.ok ? result.header ?? undefined : undefined;
+    };
+
+    /**
+     * Validated before anything is sent, not after the server refuses: a bad
+     * header name would otherwise reach `fetch` as a thrown request and read as
+     * "server unreachable". `null` is a valid answer — the user cleared both
+     * fields — and is not the same as `undefined`, the failure.
+     */
+    const requireCustomHeader = (): CustomHeader | null | undefined => {
+        const result = validateCustomHeader(customHeaderName, customHeaderValue);
+        if (!result.ok) {
+            notify.error(t(`onboarding.credentials.customHeader.${result.error}`));
+            return undefined;
+        }
+        return result.header;
+    };
+
     // Whether this provider can sign in by code at all. Presence-gated, so a
     // provider that gains the flow gets the row with no change to this screen
     // and one that lacks it never renders it.
     const codeAuth = type ? SERVER_PROVIDERS[type]?.codeAuth : undefined;
-    const { phase, start: startCodeAuth, cancel: cancelCodeAuth } = useCodeAuth({
+    const { phase, start: startCodeAuthFlow, cancel: cancelCodeAuth } = useCodeAuth({
         codeAuth,
         serverUrl,
         basicAuth: buildBasicAuth(),
+        customHeader: buildCustomHeader(),
     });
 
     const inCodeAuth = phase.status !== 'idle';
 
+    const startCodeAuth = () => {
+        if (requireCustomHeader() === undefined) return;
+        startCodeAuthFlow();
+    };
+
     const insecureWithProxy =
         proxyUsername.trim().length > 0 &&
+        typeof serverUrl === 'string' &&
+        serverUrl.startsWith('http://');
+
+    const insecureWithCustomHeader =
+        customHeaderValue.trim().length > 0 &&
         typeof serverUrl === 'string' &&
         serverUrl.startsWith('http://');
 
@@ -73,14 +115,19 @@ export default function Credentials() {
     // reaches `dispatch` — Redux only sees the sanitized halves it returns.
     // Awaited so `credentialCache` is warm before the libraries screen (or
     // anything else `useApi` touches) renders for this new server.
-    const saveServer = async (auth: ProviderAuth, usernameOverride?: string) => {
+    const saveServer = async (
+        auth: ProviderAuth,
+        usernameOverride?: string,
+        customHeader?: CustomHeader
+    ) => {
         const id = nanoid();
-        const sanitized = await saveServerCredentials(id, auth, buildBasicAuth());
+        const sanitized = await saveServerCredentials(id, auth, buildBasicAuth(), customHeader);
         dispatch(addServer({
             id, type, serverUrl,
             username: usernameOverride ?? localUsername,
             auth: sanitized.auth,
             basicAuth: sanitized.basicAuth,
+            customHeader: sanitized.customHeader,
             isAuthenticated: true,
         }));
         dispatch(setActiveServer(id));
@@ -91,7 +138,7 @@ export default function Credentials() {
     // a terminal phase.
     useEffect(() => {
         if (phase.status === 'approved') {
-            saveServer(phase.auth, phase.username);
+            saveServer(phase.auth, phase.username, buildCustomHeader());
             return;
         }
         if (phase.status === 'failed') {
@@ -121,21 +168,35 @@ export default function Credentials() {
             notify.error(t('onboarding.credentials.missingCredentials'));
             return;
         }
+        const customHeader = requireCustomHeader();
+        if (customHeader === undefined) return;
         const provider = SERVER_PROVIDERS[type];
         const basicAuth = buildBasicAuth();
         setIsTesting(true);
         try {
-            const result = await provider.connect(serverUrl, localUsername, localPassword, basicAuth);
+            const result = await provider.connect(
+                serverUrl,
+                localUsername,
+                localPassword,
+                basicAuth,
+                customHeader ?? undefined
+            );
             if (!result.success || !result.auth) {
                 notify.error(result.message || t('onboarding.credentials.authFailed'));
                 return;
             }
-            const pingOk = await provider.ping(serverUrl, localUsername, result.auth, basicAuth);
+            const pingOk = await provider.ping(
+                serverUrl,
+                localUsername,
+                result.auth,
+                basicAuth,
+                customHeader ?? undefined
+            );
             if (!pingOk) {
                 notify.error(t('onboarding.credentials.apiNotResponding'));
                 return;
             }
-            await saveServer(result.auth);
+            await saveServer(result.auth, undefined, customHeader ?? undefined);
         } catch {
             notify.error(t('onboarding.credentials.connectError'));
         } finally {
@@ -269,6 +330,19 @@ export default function Credentials() {
                                     </View>
                                 </View>
                             )}
+
+                            {/* Custom request header — one pair, sent with
+                                every request to this server. */}
+                            <CustomHeaderSection
+                                expanded={customHeaderExpanded}
+                                onToggle={() => setCustomHeaderExpanded(v => !v)}
+                                name={customHeaderName}
+                                onNameChange={setCustomHeaderName}
+                                value={customHeaderValue}
+                                onValueChange={setCustomHeaderValue}
+                                onSubmit={handleNext}
+                                insecure={insecureWithCustomHeader}
+                            />
 
                             {/* Code sign-in, where the provider offers one */}
                             {codeAuth && (

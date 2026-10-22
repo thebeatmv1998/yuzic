@@ -31,6 +31,29 @@ server also carries optional **fallback URLs** (tried in order when the primary
 is unreachable — e.g. a Tailscale address away from home) and optional HTTP
 basic auth in front of the server.
 
+### Custom request header
+
+A server behind a reverse proxy that wants one header on **every** request — an
+API key, an SSO gateway's shared secret, a static header an oauth2-proxy
+instance checks — can be given one name/value pair during onboarding or in
+**Settings → Server**. It is sent on login, every API call, cover-art fetches,
+and the audio and artwork requests the player makes. The name is kept in the
+`Server` record; the value lives in the Keychain/Keystore as
+`customHeaderValue` and is merged back for one live call by
+`withServerCredentials`, the same split as a server password. It is never
+written to Redux/MMKV, never put in a URL, and never logged.
+
+The pair is validated before it can be sent
+(`src/providers/http/customHeader.ts`): a name must be an RFC 7230 token, a
+value may not contain control characters (so a pasted CR/LF cannot inject a
+second header), and both are length-bounded. Names the app owns or that frame
+the request — `Host`, `Content-Length`, `Content-Type`, `Transfer-Encoding`,
+`Connection`, `Authorization`, `Cookie` and the other hop-by-hop headers — are
+refused rather than silently overridden. A reverse proxy's Basic auth
+therefore still belongs in its own two fields, not here. An `http://` server
+with a header configured shows a warning in both places: a secret in a
+cleartext request is readable on the network.
+
 A Subsonic server is asked with a salted token (`t`/`s`) first. One that
 answers error 41 (token auth not supported) or OpenSubsonic's 42 (mechanism not
 supported) is asked again with the password in Subsonic's `enc:` hex form, and

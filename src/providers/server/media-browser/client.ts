@@ -1,4 +1,6 @@
 import type { AudioQuality } from '@/domain/playback/AudioFormat';
+import type { CustomHeader } from '@/providers/contracts/Server';
+import { customHeaderForRequest } from '@/providers/http/customHeader';
 import { qualityToStreamParams } from '@/providers/server/streamQuality';
 import { tryWithFailover, orderedUrls, UrlTimeoutError, isAbortError } from '@/providers/http/urlFailover';
 import { serverProvenance, type Provenance } from '@/domain/identity/Provenance';
@@ -22,6 +24,8 @@ export interface MediaBrowserClientConfig {
   userId: string;
   parentId?: string;
   basicAuth?: { username: string; password?: string };
+  /** Optional extra header sent on every request, e.g. a proxy's API key. */
+  customHeader?: CustomHeader;
 }
 
 export type MediaBrowserClient = ReturnType<typeof createMediaBrowserClient>;
@@ -48,15 +52,20 @@ export function requireProvenance(client: Pick<MediaBrowserClient, 'serverId'>):
 }
 
 export function createMediaBrowserClient(config: MediaBrowserClientConfig, brand: MediaBrowserBrand) {
-  const { serverUrl, serverId, fallbackUrls, token, userId, parentId, basicAuth } = config;
+  const { serverUrl, serverId, fallbackUrls, token, userId, parentId, basicAuth, customHeader } = config;
   const baseUrl = serverUrl.replace(/\/$/, "");
   const failoverHint = serverId
     ? { id: serverId, serverUrl: baseUrl, fallbackUrls }
     : null;
-  const defaultHeaders: Record<string, string> = mediaBrowserAuthHeaders(brand, {
-    token,
-    basicAuth,
-  });
+  const defaultHeaders: Record<string, string> = {
+    // Custom first: the provider's identity/token headers are what make the
+    // account work, so a colliding custom name must not displace them.
+    ...customHeaderForRequest(customHeader),
+    ...mediaBrowserAuthHeaders(brand, {
+      token,
+      basicAuth,
+    }),
+  };
 
   // Was `X-Emby-Token` alone. That header is gated behind Jellyfin 12's
   // `EnableLegacyAuthorization` like the rest of the legacy set, so "token

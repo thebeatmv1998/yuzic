@@ -97,7 +97,7 @@ function toJukeboxState(status: jukeboxApi.JukeboxStatus): JukeboxState {
 }
 
 export const createNavidromeAdapter = (server: Server): ApiAdapter => {
-  const { id: serverId, serverUrl, fallbackUrls, username, auth: providerAuth, basicAuth } = server;
+  const { id: serverId, serverUrl, fallbackUrls, username, auth: providerAuth, basicAuth, customHeader } = server;
   const password = providerAuth?.password as string;
 
   // Every domain entity requires provenance, and provenance for a server
@@ -116,10 +116,10 @@ export const createNavidromeAdapter = (server: Server): ApiAdapter => {
     providerAuth?.musicFolderId ? [String(providerAuth.musicFolderId)] :
     [];
 
-  const client = createNavidromeClient({ serverUrl, serverId, fallbackUrls, username, password, basicAuth });
+  const client = createNavidromeClient({ serverUrl, serverId, fallbackUrls, username, password, basicAuth, customHeader });
 
   const clientFor = (folderId: string) =>
-    createNavidromeClient({ serverUrl, serverId, fallbackUrls, username, password, defaultParams: { musicFolderId: folderId }, basicAuth });
+    createNavidromeClient({ serverUrl, serverId, fallbackUrls, username, password, defaultParams: { musicFolderId: folderId }, basicAuth, customHeader });
 
   // Domain entities have no top-level `id` to de-dupe on (that ambiguity is
   // exactly what `localId`/`nativeId` replaced), so callers say how to key

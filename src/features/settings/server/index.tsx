@@ -13,6 +13,7 @@ import SettingsCardHeader from '../components/SettingsCardHeader';
 import ConnectivityIndicator from '../components/ConnectivityIndicator';
 import FallbackUrlsCard from './components/FallbackUrlsCard';
 import ClientCertificateCard from './components/ClientCertificateCard';
+import CustomHeaderCard from './components/CustomHeaderCard';
 import { selectActiveServer } from '@/state/redux/selectors/serversSelectors';
 import { selectQueueSyncEnabled, setQueueSyncEnabled } from '@/features/settings/playback/state';
 import { selectServerNowPlayingShelfEnabled, setServerNowPlayingShelfEnabled } from '@/features/settings/home/state';
@@ -139,6 +140,8 @@ const ServerSettings: React.FC = () => {
       </SettingsCard>
 
       <FallbackUrlsCard server={activeServer} />
+
+      <CustomHeaderCard server={activeServer} />
 
       <ClientCertificateCard server={activeServer} />
 

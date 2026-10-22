@@ -1,5 +1,6 @@
 import type { Server } from '@/providers/contracts/Server';
 import { serverProvenance } from '@/domain/identity/Provenance';
+import { _clearCredentialCache, setCredential } from '@/state/credentialCache';
 import { mediaHeadersForSong } from './mediaHeaders';
 
 // btoa may be absent in the jest environment; the Plex client's header builder
@@ -29,6 +30,8 @@ const server = (over: Partial<Server> = {}): Server => ({
 const expectedAuth = `Basic ${global.btoa('proxy-user:proxy-password')}`;
 
 describe('mediaHeadersForSong', () => {
+  afterEach(() => _clearCredentialCache());
+
   it('attaches the Basic auth header to both audio and artwork for a Basic-auth Plex server', () => {
     const result = mediaHeadersForSong(
       server({ basicAuth: { username: 'proxy-user', password: 'proxy-password' } }),
@@ -76,6 +79,59 @@ describe('mediaHeadersForSong', () => {
     );
     expect(result.headers).toEqual({ Authorization: expectedAuth });
     expect(result.artworkHeaders).toEqual({ Authorization: expectedAuth });
+  });
+
+  it('attaches a configured custom header to audio and artwork for any provider', async () => {
+    await setCredential(
+      { kind: 'server', serverId: 'srv-1' },
+      'customHeaderValue',
+      'proxy-secret'
+    );
+
+    const result = mediaHeadersForSong(
+      server({ type: 'navidrome', customHeader: { name: 'X-Api-Key' } }),
+      resource()
+    );
+
+    expect(result.headers).toEqual({ 'X-Api-Key': 'proxy-secret' });
+    expect(result.artworkHeaders).toEqual({ 'X-Api-Key': 'proxy-secret' });
+  });
+
+  it('sends both the custom header and Plex proxy Basic auth', async () => {
+    await setCredential(
+      { kind: 'server', serverId: 'srv-1' },
+      'customHeaderValue',
+      'proxy-secret'
+    );
+
+    const result = mediaHeadersForSong(
+      server({
+        basicAuth: { username: 'proxy-user', password: 'proxy-password' },
+        customHeader: { name: 'X-Api-Key' },
+      }),
+      resource()
+    );
+
+    expect(result.headers).toEqual({
+      'X-Api-Key': 'proxy-secret',
+      Authorization: expectedAuth,
+    });
+    expect(result.artworkHeaders).toEqual(result.headers);
+  });
+
+  it('does not send the active server custom header to another server in a mixed queue', async () => {
+    await setCredential(
+      { kind: 'server', serverId: 'srv-1' },
+      'customHeaderValue',
+      'proxy-secret'
+    );
+
+    const result = mediaHeadersForSong(
+      server({ customHeader: { name: 'X-Api-Key' } }),
+      resource({ serverId: 'srv-2' })
+    );
+
+    expect(result).toEqual({});
   });
 
   it('skips a track in a mixed queue that came from a different server', () => {

@@ -42,6 +42,12 @@ export type CredentialField =
    * symptom would be an authentication failure with no wrong value in sight.
    */
   | 'proxyPassword'
+  /**
+   * The value of the server's optional custom request header. The name is not
+   * secret and lives in the Server record; the value is a credential and gets
+   * its own keystore entry, so renaming the header never rewrites a secret.
+   */
+  | 'customHeaderValue'
   /** Client certificate material for a server behind mTLS. */
   | 'clientCertificate'
   | 'clientCertificatePassword';
@@ -112,7 +118,7 @@ async function deleteCredential(
 export async function deleteAllCredentials(scope: CredentialScope): Promise<void> {
   const fields: CredentialField[] = [
     'password', 'apiKey', 'token', 'sessionKey', 'proxyPassword',
-    'clientCertificate', 'clientCertificatePassword',
+    'customHeaderValue', 'clientCertificate', 'clientCertificatePassword',
   ];
   await Promise.all(fields.map(field => deleteCredential(scope, field)));
 }

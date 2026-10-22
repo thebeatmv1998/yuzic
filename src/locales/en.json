@@ -64,6 +64,23 @@
         "duplicatePrimaryError": "This is already the primary URL.",
         "duplicateError": "This URL is already in the list."
       },
+      "customHeader": {
+        "title": "Custom request header",
+        "description": "One header sent with every request to this server, including cover art and audio streams. The value stays in the device keychain.",
+        "namePlaceholder": "Header name (e.g. X-Api-Key)",
+        "valuePlaceholder": "Header value",
+        "valueStoredPlaceholder": "Stored — leave empty to keep it",
+        "save": "Save header",
+        "remove": "Remove header",
+        "saveFailed": "Could not save the header.",
+        "insecureWarning": "This header is sent over an unencrypted HTTP connection and can be read on the network. Use HTTPS instead.",
+        "missingName": "Enter a header name.",
+        "missingValue": "Enter a header value.",
+        "invalidName": "Header names may only contain letters, digits and !#$%&'*+-.^_`|~",
+        "reservedName": "That header is managed by the app and cannot be overridden.",
+        "invalidValue": "The header value contains characters that are not allowed.",
+        "tooLong": "That header is too long."
+      },
       "privacyTitle": "Privacy",
       "queueSync": "Sync queue across devices",
       "queueSyncDescription": "Resume playback across your devices.",
@@ -839,6 +856,19 @@
         "usernamePlaceholder": "Proxy username",
         "passwordPlaceholder": "Proxy password",
         "insecureWarning": "Proxy credentials can be exposed over an insecure HTTP connection. Use HTTPS instead."
+      },
+      "customHeader": {
+        "toggle": "Custom request header",
+        "helper": "Sent with every request to this server. The value is stored in the device keychain.",
+        "namePlaceholder": "Header name (e.g. X-Api-Key)",
+        "valuePlaceholder": "Header value",
+        "insecureWarning": "This header is sent over an unencrypted HTTP connection and can be read on the network. Use HTTPS instead.",
+        "missingName": "Enter a header name.",
+        "missingValue": "Enter a header value.",
+        "invalidName": "Header names may only contain letters, digits and !#$%&'*+-.^_`|~",
+        "reservedName": "That header is managed by the app and cannot be overridden.",
+        "invalidValue": "The header value contains characters that are not allowed.",
+        "tooLong": "That header is too long."
       },
       "codeAuth": {
         "enterCode": "Enter this code to sign in",

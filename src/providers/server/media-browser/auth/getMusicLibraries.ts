@@ -2,6 +2,7 @@ import { Server } from '@/providers/contracts/Server';
 import { MediaBrowserItemsResponse } from '../types';
 import { EMBY_BRAND, JELLYFIN_BRAND } from '../brand';
 import { mediaBrowserAuthHeaders } from '../clientHeader';
+import { customHeaderForRequest } from '@/providers/http/customHeader';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
 export async function getMusicLibraries(server: Server): Promise<{ id: string; name: string }[]> {
@@ -19,7 +20,10 @@ export async function getMusicLibraries(server: Server): Promise<{ id: string; n
     // not a built client.
     const brand = server.type === 'emby' ? EMBY_BRAND : JELLYFIN_BRAND;
     const res = await serverFetch(`${serverUrl}/Users/${encodeURIComponent(userId)}/Views`, {
-      headers: mediaBrowserAuthHeaders(brand, { token }),
+      headers: {
+        ...customHeaderForRequest(server.customHeader),
+        ...mediaBrowserAuthHeaders(brand, { token }),
+      },
     });
     // A refused or errored response is not a server without music. Returning
     // an empty list here rendered a bad token, an expired session and an

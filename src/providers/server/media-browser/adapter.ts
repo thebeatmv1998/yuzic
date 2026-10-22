@@ -76,7 +76,7 @@ export const createMediaBrowserAdapter = (
   server: Server,
   brand: MediaBrowserBrand
 ): ApiAdapter => {
-  const { id: serverId, serverUrl, fallbackUrls, auth: providerAuth, basicAuth } = server;
+  const { id: serverId, serverUrl, fallbackUrls, auth: providerAuth, basicAuth, customHeader } = server;
   const { token, userId } = providerAuth as { token: string; userId: string };
 
   // Support new array format (parentIds) and old single-value format (parentId)
@@ -85,10 +85,16 @@ export const createMediaBrowserAdapter = (
     providerAuth?.parentId ? [String(providerAuth.parentId)] :
     [];
 
-  const client = createMediaBrowserClient({ serverUrl, serverId, fallbackUrls, token, userId, basicAuth }, brand);
+  const client = createMediaBrowserClient(
+    { serverUrl, serverId, fallbackUrls, token, userId, basicAuth, customHeader },
+    brand
+  );
 
   const clientFor = (pid: string) =>
-    createMediaBrowserClient({ serverUrl, serverId, fallbackUrls, token, userId, parentId: pid, basicAuth }, brand);
+    createMediaBrowserClient(
+      { serverUrl, serverId, fallbackUrls, token, userId, parentId: pid, basicAuth, customHeader },
+      brand
+    );
 
   // Keyed by `keyOf` rather than a hardcoded `.id` — the domain entities this
   // fans out over carry their identity as `localId`.

@@ -8,6 +8,7 @@ import store from '@/state/redux/store';
 import { selectActiveServer } from '@/state/redux/selectors/serversSelectors';
 import { SERVER_PROVIDERS } from './serverConnections';
 import { withServerCredentials } from './serverCredentials';
+import { customHeaderForRequest } from '@/providers/http/customHeader';
 import { normalizeImageUrlForSize } from '@/features/artwork/normalizeImageUrl';
 import { resolveCoverNow } from '@/features/artwork/coverResolution';
 
@@ -75,6 +76,42 @@ export function buildCoverCacheKey(
   if (cover.kind === 'emby') return `emby:${active.id}:${cover.itemId}:${cover.tag ?? ''}:${px}`;
 
   return null;
+}
+
+/**
+ * Headers an on-screen cover request needs, or undefined when it needs none.
+ *
+ * The image loader is a separate transport from the API clients: it takes a
+ * URL and, on some components, headers. A server behind something that
+ * authenticates every request therefore needs the same custom header here as
+ * its API calls, or a library whose metadata loads would still draw blank
+ * tiles. Only a server-owned cover gets them — a Cover Art Archive URL and a
+ * user-supplied URL are somebody else's host and must never receive a secret
+ * meant for the user's server.
+ *
+ * The value comes from the keystore through `withServerCredentials`; the
+ * Redux `Server` this reads carries only the header name.
+ */
+export function buildCoverRequestHeaders(
+  source: CoverSource
+): Record<string, string> | undefined {
+  const cover = source ? resolveCoverNow(source).cover : source;
+  if (!cover) return undefined;
+  const serverOwned =
+    cover.kind === 'navidrome' ||
+    cover.kind === 'jellyfin' ||
+    cover.kind === 'emby' ||
+    cover.kind === 'plex';
+  if (!serverOwned) return undefined;
+
+  const active = selectActiveServer(store.getState());
+  if (!active) return undefined;
+  const live = withServerCredentials(active);
+  const headers: Record<string, string> = {
+    ...customHeaderForRequest(live.customHeader),
+    ...(SERVER_PROVIDERS[active.type]?.mediaAuthHeaders?.(live) ?? {}),
+  };
+  return Object.keys(headers).length > 0 ? headers : undefined;
 }
 
 /**

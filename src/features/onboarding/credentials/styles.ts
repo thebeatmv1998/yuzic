@@ -46,6 +46,12 @@ export const styles = StyleSheet.create({
     proxyToggleIcon: { marginRight: spacing.tight },
     proxyToggleText: { ...typography.rowSubtitle, flex: 1, color: onDark.mutedText },
     proxySection: { marginTop: spacing.xs, marginBottom: spacing.sm },
+    customHeaderHint: {
+        ...typography.caption,
+        color: onDark.mutedText,
+        marginBottom: spacing.md,
+        paddingHorizontal: spacing.md,
+    },
     warningRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',

@@ -64,6 +64,23 @@
         "duplicatePrimaryError": "这已经是主URL。",
         "duplicateError": "此URL已在列表中。"
       },
+      "customHeader": {
+        "title": "自定义请求头",
+        "description": "随发往此服务器的每个请求（包括封面和音频流）一起发送的请求头。值保存在设备钥匙串中。",
+        "namePlaceholder": "请求头名称（例如 X-Api-Key）",
+        "valuePlaceholder": "请求头值",
+        "valueStoredPlaceholder": "已保存 — 留空以保留",
+        "save": "保存请求头",
+        "remove": "删除请求头",
+        "saveFailed": "无法保存请求头。",
+        "insecureWarning": "此请求头会通过未加密的 HTTP 连接发送，可能被网络上的其他人读取。请使用 HTTPS。",
+        "missingName": "请输入请求头名称。",
+        "missingValue": "请输入请求头值。",
+        "invalidName": "请求头名称只能包含字母、数字和 !#$%&'*+-.^_`|~",
+        "reservedName": "此请求头由应用管理，无法覆盖。",
+        "invalidValue": "请求头值包含不允许的字符。",
+        "tooLong": "请求头过长。"
+      },
       "privacyTitle": "隐私",
       "queueSync": "跨设备同步播放队列",
       "queueSyncDescription": "在你的设备间接续播放。",
@@ -838,6 +855,19 @@
         "usernamePlaceholder": "代理用户名",
         "passwordPlaceholder": "代理密码",
         "insecureWarning": "代理凭据可能会在不安全的 HTTP 连接上泄露。请改用 HTTPS。"
+      },
+      "customHeader": {
+        "toggle": "自定义请求头",
+        "helper": "随发往此服务器的每个请求一起发送。值保存在设备钥匙串中。",
+        "namePlaceholder": "请求头名称（例如 X-Api-Key）",
+        "valuePlaceholder": "请求头值",
+        "insecureWarning": "此请求头会通过未加密的 HTTP 连接发送，可能被网络上的其他人读取。请使用 HTTPS。",
+        "missingName": "请输入请求头名称。",
+        "missingValue": "请输入请求头值。",
+        "invalidName": "请求头名称只能包含字母、数字和 !#$%&'*+-.^_`|~",
+        "reservedName": "此请求头由应用管理，无法覆盖。",
+        "invalidValue": "请求头值包含不允许的字符。",
+        "tooLong": "请求头过长。"
       },
       "codeAuth": {
         "enterCode": "输入此代码以登录",
