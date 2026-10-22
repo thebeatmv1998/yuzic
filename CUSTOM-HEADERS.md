@@ -25,6 +25,28 @@ it strips them from incoming requests — otherwise anyone can forge them.
 or the reverse-proxy Basic-auth fields), so a Bearer token cannot be added as a
 custom header.
 
+## Cloudflare in front
+
+Two different layers can produce a 403, and they need different headers:
+
+- **Cloudflare Access (Zero Trust).** A machine client authenticates with a
+  service token: `CF-Access-Client-Id` and `CF-Access-Client-Secret`, both
+  added here. The Access policy's action must be **Service Auth**; with
+  "Allow", Access redirects to the IdP even when a valid token is sent. With
+  no token at all, expect a 302 to `<team>.cloudflareaccess.com` rather than
+  an immediate 403.
+- **Cloudflare proxy without Zero Trust.** Cloudflare does not authenticate
+  anything here; a 403 is WAF / Bot Fight Mode / a rate-limit rule, or the
+  origin itself. Check **Security → Events** for the `cf-ray`, then bypass
+  Cloudflare (origin IP or grey-cloud DNS) and repeat the request. If the
+  origin answers 200, Cloudflare is the blocker; if it also answers 403, the
+  origin or Authentik is.
+
+If both Cloudflare Access and Authentik are in the chain, the service token
+gets you past Cloudflare and Authentik still needs its own credential (Bearer
+JWT or Basic app password). `X-Authentik-*` identity headers are set by the
+outpost after a session; they are not a client credential.
+
 ## What it sends
 
 The headers are attached to every request made against that server:
