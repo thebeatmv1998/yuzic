@@ -36,11 +36,19 @@ Two different layers can produce a 403, and they need different headers:
   no token at all, expect a 302 to `<team>.cloudflareaccess.com` rather than
   an immediate 403.
 - **Cloudflare proxy without Zero Trust.** Cloudflare does not authenticate
-  anything here; a 403 is WAF / Bot Fight Mode / a rate-limit rule, or the
-  origin itself. Check **Security → Events** for the `cf-ray`, then bypass
-  Cloudflare (origin IP or grey-cloud DNS) and repeat the request. If the
-  origin answers 200, Cloudflare is the blocker; if it also answers 403, the
-  origin or Authentik is.
+  anything here; a 403 is WAF / Bot Fight Mode / Browser Integrity Check / a
+  rate-limit rule, or the origin itself. Check **Security → Events** for the
+  `cf-ray`, then bypass Cloudflare (origin IP or grey-cloud DNS) and repeat the
+  request. If the origin answers 200, Cloudflare is the blocker; if it also
+  answers 403, the origin or Authentik is.
+
+  **A 403 that never reaches the origin, with no Security Event, is often
+  Browser Integrity Check or Bot Fight Mode rejecting a non-browser
+  `User-Agent`.** React Native's Android networking sends OkHttp's default
+  (`okhttp/…`); Navic, for comparison, sets `User-Agent: Navic`. Add a
+  `User-Agent` row here to test that theory, or turn BIC/Bot Fight Mode off for
+  the host (or add a WAF skip rule). If a custom app UA is accepted, the app can
+  also send it by default.
 
 If both Cloudflare Access and Authentik are in the chain, the service token
 gets you past Cloudflare and Authentik still needs its own credential (Bearer
