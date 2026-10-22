@@ -63,18 +63,22 @@ describe('Plex client failover', () => {
 });
 
 describe('Plex client custom header', () => {
-  it('sends the configured header without displacing the Plex token', async () => {
+  it('sends every configured header without displacing the Plex token', async () => {
     mockServerFetch.mockResolvedValueOnce({ ok: true, text: async () => '{}' });
     const client = createPlexClient({
       serverUrl: 'https://home.example',
       token: 'plex-token',
-      customHeader: { name: 'X-Api-Key', value: 'proxy-secret' },
+      customHeaders: [
+        { name: 'X-Api-Key', value: 'proxy-secret' },
+        { name: 'X-Authentik-Username', value: 'ari' },
+      ],
     });
 
     await client.request('/library/sections');
 
     expect(mockServerFetch.mock.calls[0][1].headers).toMatchObject({
       'X-Api-Key': 'proxy-secret',
+      'X-Authentik-Username': 'ari',
       'X-Plex-Token': 'plex-token',
     });
   });

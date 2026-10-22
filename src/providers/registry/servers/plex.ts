@@ -22,7 +22,7 @@ export const plexProvider: ServerProviderConfig = {
       fallbackUrls: server.fallbackUrls,
       token,
       basicAuth: server.basicAuth,
-      customHeader: server.customHeader,
+      customHeaders: server.customHeaders,
     });
     const response = await client.request<any>('/library/sections');
     return (response.MediaContainer?.Directory ?? [])
@@ -31,13 +31,13 @@ export const plexProvider: ServerProviderConfig = {
   },
   addressHintKey: 'onboarding.address.hintPlex',
   probeAddress: (url) => probePlexAddress(url),
-  ping: async (url, _username, auth, basicAuth, customHeader) => {
+  ping: async (url, _username, auth, basicAuth, customHeaders) => {
     const token = auth.token as string | undefined;
     if (!token) return false;
     try {
       // /identity is public; a protected section endpoint verifies both the
       // Plex account token and any configured proxy credentials.
-      await createPlexClient({ serverUrl: url, token, basicAuth, customHeader }).request('/library/sections');
+      await createPlexClient({ serverUrl: url, token, basicAuth, customHeaders }).request('/library/sections');
       return true;
     } catch { return false; }
   },
@@ -48,8 +48,8 @@ export const plexProvider: ServerProviderConfig = {
   createAdapter: (server) => createPlexAdapter(server),
   codeAuth: {
     begin: async ({ serverUrl, basicAuth }) => beginPlexPin(serverUrl, basicAuth),
-    poll: async ({ serverUrl, handle, basicAuth, customHeader }) =>
-      pollPlexPin(String(handle), serverUrl, basicAuth, customHeader),
+    poll: async ({ serverUrl, handle, basicAuth, customHeaders }) =>
+      pollPlexPin(String(handle), serverUrl, basicAuth, customHeaders),
     pollIntervalMs: 2000,
     timeoutMs: 10 * 60 * 1000,
     instructionKey: 'onboarding.credentials.codeAuth.plex.instruction',
@@ -67,7 +67,7 @@ export const plexProvider: ServerProviderConfig = {
       fallbackUrls: server.fallbackUrls,
       token,
       basicAuth: server.basicAuth,
-      customHeader: server.customHeader,
+      customHeaders: server.customHeaders,
     }).buildImageUrl(cover.path);
   },
 };

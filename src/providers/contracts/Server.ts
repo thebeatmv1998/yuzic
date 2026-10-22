@@ -23,8 +23,8 @@ export interface BasicAuth {
  * One extra header sent with every request to this server.
  *
  * `value` is a secret — a proxy's API key, an access token, a shared secret —
- * so the persisted `Server` carries only `name`. The value lives in the
- * keystore under `customHeaderValue` and is merged back for one live call by
+ * so the persisted `Server` carries only `name`. The values live in the
+ * keystore under `customHeaders` and are merged back for one live call by
  * `withServerCredentials`, exactly like `BasicAuth.password`.
  */
 export interface CustomHeader {
@@ -57,8 +57,15 @@ export interface Server {
   auth?: ProviderAuth;
   basicAuth?: BasicAuth;
   /**
-   * Non-secret half of an optional custom request header. Sent on every
-   * request to this server, including stream and artwork fetches.
+   * Non-secret halves of the optional custom request headers. Sent on every
+   * request to this server, including stream and artwork fetches. Values are
+   * never stored here — the keystore holds the JSON array under
+   * `customHeaders`, and `withServerCredentials` merges it back.
+   */
+  customHeaders?: CustomHeader[];
+  /**
+   * @deprecated The single-header shape written by the first version of this
+   * fork. Read only; new saves write `customHeaders` and clear this.
    */
   customHeader?: CustomHeader;
   isAuthenticated: boolean;

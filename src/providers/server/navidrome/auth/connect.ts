@@ -16,7 +16,7 @@ export async function connect(
   username: string,
   password: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Promise<ConnectResult> {
   if (!serverUrl || !username || !password) {
     return { success: false, message: i18n.t('onboarding.connect.missingCredentials') };
@@ -35,7 +35,7 @@ export async function connect(
   const url = `${cleanUrl}/rest/getMusicFolders.view?${params}`;
 
   try {
-    const res = await serverFetch(url, { headers: subsonicRequestHeaders(basicAuth, customHeader) });
+    const res = await serverFetch(url, { headers: subsonicRequestHeaders(basicAuth, customHeaders) });
     if (!res.ok) {
       return { success: false, message: i18n.t('onboarding.connect.serverErrorStatus', { status: res.status }) };
     }

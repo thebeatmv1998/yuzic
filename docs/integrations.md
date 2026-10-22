@@ -31,28 +31,37 @@ server also carries optional **fallback URLs** (tried in order when the primary
 is unreachable — e.g. a Tailscale address away from home) and optional HTTP
 basic auth in front of the server.
 
-### Custom request header
+### Custom request headers
 
-A server behind a reverse proxy that wants one header on **every** request — an
-API key, an SSO gateway's shared secret, a static header an oauth2-proxy
-instance checks — can be given one name/value pair during onboarding or in
-**Settings → Server**. It is sent on login, every API call, cover-art fetches,
-and the audio and artwork requests the player makes. The name is kept in the
-`Server` record; the value lives in the Keychain/Keystore as
-`customHeaderValue` and is merged back for one live call by
-`withServerCredentials`, the same split as a server password. It is never
-written to Redux/MMKV, never put in a URL, and never logged.
+A server behind a reverse proxy that wants headers on **every** request — API
+keys, an SSO gateway's shared secrets, static headers an oauth2-proxy or
+Authentik outpost checks — can be given up to eight name/value pairs during
+onboarding or in **Settings → Server**. They are sent on login, every API call,
+cover-art fetches, and the audio and artwork requests the player makes. The
+names are kept in the `Server` record; the values live in the
+Keychain/Keystore as a JSON array under `customHeaders` and are merged back for
+one live call by `withServerCredentials`, the same split as a server password.
+They are never written to Redux/MMKV, never put in a URL, and never logged.
 
-The pair is validated before it can be sent
+An Authentik forward-auth setup typically uses two of them, such as
+`X-Authentik-Username` and `X-Authentik-Groups`; only send those if the outpost
+expects the client to supply them, and make sure it strips client-supplied
+identity headers if it is relying on its own. `Authorization` stays reserved
+for the app's provider token or the proxy Basic-auth fields, so a Bearer token
+is not available as a custom header.
+
+The list is validated before it can be sent
 (`src/providers/http/customHeader.ts`): a name must be an RFC 7230 token, a
 value may not contain control characters (so a pasted CR/LF cannot inject a
-second header), and both are length-bounded. Names the app owns or that frame
-the request — `Host`, `Content-Length`, `Content-Type`, `Transfer-Encoding`,
-`Connection`, `Authorization`, `Cookie` and the other hop-by-hop headers — are
-refused rather than silently overridden. A reverse proxy's Basic auth
-therefore still belongs in its own two fields, not here. An `http://` server
-with a header configured shows a warning in both places: a secret in a
-cleartext request is readable on the network.
+second header), names must be unique, and the list is bounded both per field
+and as one serialized value (1900 bytes — the Android SecureStore limit).
+Names the app owns or that frame the request — `Host`, `Content-Length`,
+`Content-Type`, `Transfer-Encoding`, `Connection`, `Authorization`, `Cookie`
+and the other hop-by-hop headers — are refused rather than silently
+overridden. A reverse proxy's Basic auth therefore still belongs in its own
+two fields, not here. An `http://` server with headers configured shows a
+warning in both places: a secret in a cleartext request is readable on the
+network.
 
 A Subsonic server is asked with a salted token (`t`/`s`) first. One that
 answers error 41 (token auth not supported) or OpenSubsonic's 42 (mechanism not

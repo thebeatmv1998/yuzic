@@ -20,7 +20,8 @@ import {
 
 const FIELDS: readonly CredentialField[] = [
   'password', 'apiKey', 'token', 'sessionKey', 'proxyPassword',
-  'customHeaderValue', 'clientCertificate', 'clientCertificatePassword',
+  'customHeaders', 'customHeaderValue',
+  'clientCertificate', 'clientCertificatePassword',
 ];
 
 export type CredentialBundle = Partial<Record<CredentialField, string>>;

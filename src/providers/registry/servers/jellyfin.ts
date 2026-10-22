@@ -28,15 +28,15 @@ export const jellyfinProvider: ServerProviderConfig = {
   listLibraries: (server) => getMusicLibraries(server),
   addressHintKey: 'onboarding.address.hintJellyfin',
   probeAddress: (url) => probeMediaBrowserAddress(JELLYFIN_BRAND, url),
-  ping: async (url, username, auth, basicAuth, customHeader) => {
+  ping: async (url, username, auth, basicAuth, customHeaders) => {
     const token = auth.token as string;
     const userId = auth.userId as string;
     if (!token || !userId) return false;
-    const client = createJellyfinClient({ serverUrl: url, token, userId, basicAuth, customHeader });
+    const client = createJellyfinClient({ serverUrl: url, token, userId, basicAuth, customHeaders });
     return pingMediaBrowser(client);
   },
-  connect: async (url, username, password, basicAuth, customHeader) => {
-    const result = await connectMediaBrowser(JELLYFIN_BRAND, url, username, password, basicAuth, customHeader);
+  connect: async (url, username, password, basicAuth, customHeaders) => {
+    const result = await connectMediaBrowser(JELLYFIN_BRAND, url, username, password, basicAuth, customHeaders);
     if (!result.success) {
       return {
         success: false,
@@ -54,13 +54,13 @@ export const jellyfinProvider: ServerProviderConfig = {
   },
   createAdapter: (server) => createJellyfinAdapter(server),
   codeAuth: {
-    begin: async ({ serverUrl, basicAuth, customHeader }) => {
-      const { secret, code } = await initiateQuickConnect(serverUrl, basicAuth, customHeader);
+    begin: async ({ serverUrl, basicAuth, customHeaders }) => {
+      const { secret, code } = await initiateQuickConnect(serverUrl, basicAuth, customHeaders);
       return { code, handle: secret };
     },
-    poll: async ({ serverUrl, handle, basicAuth, customHeader }) => {
+    poll: async ({ serverUrl, handle, basicAuth, customHeaders }) => {
       const secret = handle as string;
-      const authenticated = await pollQuickConnect(serverUrl, secret, basicAuth, customHeader);
+      const authenticated = await pollQuickConnect(serverUrl, secret, basicAuth, customHeaders);
       if (!authenticated) return null;
 
       // Quick Connect has been approved by this point, so a failure exchanging
@@ -72,7 +72,7 @@ export const jellyfinProvider: ServerProviderConfig = {
           serverUrl,
           secret,
           basicAuth,
-          customHeader
+          customHeaders
         );
         return { auth: { token, userId }, username };
       } catch (err) {

@@ -1,17 +1,17 @@
 import { serverFetch } from '@/features/mtls/serverFetch';
 import { mediaBrowserClientHeader } from '@/providers/server/media-browser/clientHeader';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
 
 export async function initiateQuickConnect(
   serverUrl: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Promise<{ secret: string; code: string }> {
   const res = await serverFetch(`${serverUrl}/QuickConnect/Initiate`, {
     method: 'POST',
     headers: {
-      ...customHeaderForRequest(customHeader),
+      ...customHeadersForRequest(customHeaders),
       'X-Emby-Authorization': mediaBrowserClientHeader(),
       ...(basicAuth ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) } : {}),
     },
@@ -26,12 +26,12 @@ export async function pollQuickConnect(
   serverUrl: string,
   secret: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Promise<boolean> {
   try {
     const res = await serverFetch(`${serverUrl}/QuickConnect/Connect?Secret=${encodeURIComponent(secret)}`, {
       headers: {
-        ...customHeaderForRequest(customHeader),
+        ...customHeadersForRequest(customHeaders),
         'X-Emby-Authorization': mediaBrowserClientHeader(),
         ...(basicAuth ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) } : {}),
       },
@@ -48,13 +48,13 @@ export async function authenticateWithQuickConnect(
   serverUrl: string,
   secret: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Promise<{ token: string; userId: string; username: string }> {
   const res = await serverFetch(`${serverUrl}/Users/AuthenticateWithQuickConnect`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...customHeaderForRequest(customHeader),
+      ...customHeadersForRequest(customHeaders),
       'X-Emby-Authorization': mediaBrowserClientHeader(),
       ...(basicAuth ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) } : {}),
     },

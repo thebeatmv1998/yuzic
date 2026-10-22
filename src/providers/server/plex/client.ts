@@ -1,5 +1,5 @@
 import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import { getInstallationId } from '@/providers/server/installationId';
 import { tryWithFailover, orderedUrls } from '@/providers/http/urlFailover';
 import { serverFetch } from '@/features/mtls/serverFetch';
@@ -14,8 +14,8 @@ type PlexClientConfig = {
   fallbackUrls?: string[];
   token?: string;
   basicAuth?: BasicAuth;
-  /** Optional extra header sent on every server request, e.g. a proxy API key. */
-  customHeader?: CustomHeader;
+  /** Optional extra headers sent on every server request, e.g. proxy API keys. */
+  customHeaders?: CustomHeader[];
 };
 
 const PRODUCT = 'Yuzic';
@@ -44,7 +44,7 @@ export function plexBasicAuthHeader(basicAuth?: BasicAuth): Record<string, strin
 export function plexHeaders(
   token?: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -57,7 +57,7 @@ export function plexHeaders(
   // Custom first, then the app's own identity and credentials: a colliding
   // name must never displace the token this client was built around.
   return {
-    ...customHeaderForRequest(customHeader),
+    ...customHeadersForRequest(customHeaders),
     ...headers,
     ...plexBasicAuthHeader(basicAuth),
   };
@@ -78,7 +78,7 @@ export function createPlexClient(config: PlexClientConfig) {
       const response = await serverFetch(`${url}${path}`, {
         ...init,
         headers: {
-          ...plexHeaders(config.token, config.basicAuth, config.customHeader),
+          ...plexHeaders(config.token, config.basicAuth, config.customHeaders),
           ...init.headers,
         },
       });

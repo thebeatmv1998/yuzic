@@ -8,7 +8,7 @@ import store from '@/state/redux/store';
 import { selectActiveServer } from '@/state/redux/selectors/serversSelectors';
 import { SERVER_PROVIDERS } from './serverConnections';
 import { withServerCredentials } from './serverCredentials';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import { normalizeImageUrlForSize } from '@/features/artwork/normalizeImageUrl';
 import { resolveCoverNow } from '@/features/artwork/coverResolution';
 
@@ -108,7 +108,7 @@ export function buildCoverRequestHeaders(
   if (!active) return undefined;
   const live = withServerCredentials(active);
   const headers: Record<string, string> = {
-    ...customHeaderForRequest(live.customHeader),
+    ...customHeadersForRequest(live.customHeaders),
     ...(SERVER_PROVIDERS[active.type]?.mediaAuthHeaders?.(live) ?? {}),
   };
   return Object.keys(headers).length > 0 ? headers : undefined;

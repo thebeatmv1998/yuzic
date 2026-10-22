@@ -172,18 +172,24 @@ describe('password auth fallback', () => {
 describe('custom request header', () => {
   beforeEach(() => mockServerFetch.mockReset());
 
-  it('sends the configured header on every request', async () => {
+  it('sends every configured header on every request', async () => {
     mockServerFetch.mockReturnValue(respond({ 'subsonic-response': { status: 'ok' } }));
     const nd = createNavidromeClient({
       serverUrl: 'https://music.example.com',
       username: 'zack',
       password: 'hunter2',
-      customHeader: { name: 'X-Api-Key', value: 'proxy-secret' },
+      customHeaders: [
+        { name: 'X-Api-Key', value: 'proxy-secret' },
+        { name: 'X-Authentik-Username', value: 'ari' },
+      ],
     });
 
     await nd.request('ping.view');
 
-    expect(mockServerFetch.mock.calls[0][1].headers).toEqual({ 'X-Api-Key': 'proxy-secret' });
+    expect(mockServerFetch.mock.calls[0][1].headers).toEqual({
+      'X-Api-Key': 'proxy-secret',
+      'X-Authentik-Username': 'ari',
+    });
   });
 
   it('keeps the header on a form POST and does not disturb Content-Type', async () => {
@@ -196,13 +202,17 @@ describe('custom request header', () => {
       serverUrl: 'https://music.example.com',
       username: 'zack',
       password: 'hunter2',
-      customHeader: { name: 'X-Api-Key', value: 'proxy-secret' },
+      customHeaders: [
+        { name: 'X-Api-Key', value: 'proxy-secret' },
+        { name: 'X-Authentik-Username', value: 'ari' },
+      ],
     });
 
     await nd.request('updatePlaylist.view', { playlistId: 'p1' }, { method: 'POST' });
 
     expect(mockServerFetch.mock.calls[1][1].headers).toMatchObject({
       'X-Api-Key': 'proxy-secret',
+      'X-Authentik-Username': 'ari',
       'Content-Type': 'application/x-www-form-urlencoded',
     });
   });

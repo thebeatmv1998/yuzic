@@ -1,6 +1,6 @@
 import type { AudioQuality } from '@/domain/playback/AudioFormat';
 import type { CustomHeader } from '@/providers/contracts/Server';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import { qualityToStreamParams } from '@/providers/server/streamQuality';
 import { tryWithFailover, orderedUrls, UrlTimeoutError, isAbortError } from '@/providers/http/urlFailover';
 import { serverProvenance, type Provenance } from '@/domain/identity/Provenance';
@@ -24,8 +24,8 @@ export interface MediaBrowserClientConfig {
   userId: string;
   parentId?: string;
   basicAuth?: { username: string; password?: string };
-  /** Optional extra header sent on every request, e.g. a proxy's API key. */
-  customHeader?: CustomHeader;
+  /** Optional extra headers sent on every request, e.g. a proxy's API keys. */
+  customHeaders?: CustomHeader[];
 }
 
 export type MediaBrowserClient = ReturnType<typeof createMediaBrowserClient>;
@@ -52,7 +52,7 @@ export function requireProvenance(client: Pick<MediaBrowserClient, 'serverId'>):
 }
 
 export function createMediaBrowserClient(config: MediaBrowserClientConfig, brand: MediaBrowserBrand) {
-  const { serverUrl, serverId, fallbackUrls, token, userId, parentId, basicAuth, customHeader } = config;
+  const { serverUrl, serverId, fallbackUrls, token, userId, parentId, basicAuth, customHeaders } = config;
   const baseUrl = serverUrl.replace(/\/$/, "");
   const failoverHint = serverId
     ? { id: serverId, serverUrl: baseUrl, fallbackUrls }
@@ -60,7 +60,7 @@ export function createMediaBrowserClient(config: MediaBrowserClientConfig, brand
   const defaultHeaders: Record<string, string> = {
     // Custom first: the provider's identity/token headers are what make the
     // account work, so a colliding custom name must not displace them.
-    ...customHeaderForRequest(customHeader),
+    ...customHeadersForRequest(customHeaders),
     ...mediaBrowserAuthHeaders(brand, {
       token,
       basicAuth,

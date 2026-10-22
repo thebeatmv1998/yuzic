@@ -33,14 +33,14 @@ export const navidromeProvider: ServerProviderConfig = {
   listLibraries: (server) => getMusicFolders(server),
   addressHintKey: 'onboarding.address.hintNavidrome',
   probeAddress: (url) => probeSubsonicAddress(url),
-  ping: async (url, username, auth, basicAuth, customHeader) => {
+  ping: async (url, username, auth, basicAuth, customHeaders) => {
     const password = auth.password as string;
     if (!username || !password) return false;
-    const client = createNavidromeClient({ serverUrl: url, username, password, basicAuth, customHeader });
+    const client = createNavidromeClient({ serverUrl: url, username, password, basicAuth, customHeaders });
     return pingNavidrome(client);
   },
-  connect: async (url, username, password, basicAuth, customHeader) => {
-    const result = await connectNavidrome(url, username, password, basicAuth, customHeader);
+  connect: async (url, username, password, basicAuth, customHeaders) => {
+    const result = await connectNavidrome(url, username, password, basicAuth, customHeaders);
     if (!result.success) {
       return {
         success: false,

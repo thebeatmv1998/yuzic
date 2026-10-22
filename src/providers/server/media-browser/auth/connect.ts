@@ -1,6 +1,6 @@
 import { MediaBrowserBrand } from "../brand";
 import { mediaBrowserAuthHeaders } from "../clientHeader";
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
@@ -14,14 +14,14 @@ export async function connect(
   username: string,
   password: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Promise<ConnectResult> {
   try {
     const res = await serverFetch(`${serverUrl}/Users/AuthenticateByName`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...customHeaderForRequest(customHeader),
+        ...customHeadersForRequest(customHeaders),
         ...mediaBrowserAuthHeaders(brand, { basicAuth }),
       },
       // `App` is not a field of Jellyfin's `AuthenticateUserByName` body and

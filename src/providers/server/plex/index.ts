@@ -63,7 +63,7 @@ export function createPlexAdapter(server: Server): ApiAdapter {
     fallbackUrls: server.fallbackUrls,
     token,
     basicAuth: server.basicAuth,
-    customHeader: server.customHeader,
+    customHeaders: server.customHeaders,
   });
   const sections = sectionIds(server);
   // Built once at the client boundary and threaded into every mapper call —

@@ -55,7 +55,7 @@ describe('createMediaBrowserClient', () => {
     await expect(client.request('/Items')).resolves.toEqual({});
   });
 
-  it('sends the configured custom header beside the brand credentials', async () => {
+  it('sends every configured custom header beside the brand credentials', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -64,7 +64,13 @@ describe('createMediaBrowserClient', () => {
     }) as unknown as typeof fetch;
 
     const client = createMediaBrowserClient(
-      { ...baseConfig, customHeader: { name: 'X-Api-Key', value: 'proxy-secret' } },
+      {
+        ...baseConfig,
+        customHeaders: [
+          { name: 'X-Api-Key', value: 'proxy-secret' },
+          { name: 'X-Authentik-Username', value: 'ari' },
+        ],
+      },
       JELLYFIN_BRAND
     );
     await client.request('/Items');
@@ -72,6 +78,7 @@ describe('createMediaBrowserClient', () => {
     const [, init] = (global.fetch as jest.Mock).mock.calls[0];
     expect(init.headers).toMatchObject({
       'X-Api-Key': 'proxy-secret',
+      'X-Authentik-Username': 'ari',
       Authorization: expect.stringContaining('MediaBrowser Client='),
     });
   });

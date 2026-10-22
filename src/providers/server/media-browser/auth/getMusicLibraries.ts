@@ -2,7 +2,7 @@ import { Server } from '@/providers/contracts/Server';
 import { MediaBrowserItemsResponse } from '../types';
 import { EMBY_BRAND, JELLYFIN_BRAND } from '../brand';
 import { mediaBrowserAuthHeaders } from '../clientHeader';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
 export async function getMusicLibraries(server: Server): Promise<{ id: string; name: string }[]> {
@@ -21,7 +21,7 @@ export async function getMusicLibraries(server: Server): Promise<{ id: string; n
     const brand = server.type === 'emby' ? EMBY_BRAND : JELLYFIN_BRAND;
     const res = await serverFetch(`${serverUrl}/Users/${encodeURIComponent(userId)}/Views`, {
       headers: {
-        ...customHeaderForRequest(server.customHeader),
+        ...customHeadersForRequest(server.customHeaders),
         ...mediaBrowserAuthHeaders(brand, { token }),
       },
     });

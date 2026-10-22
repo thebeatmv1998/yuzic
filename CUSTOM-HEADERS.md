@@ -1,15 +1,33 @@
-# Custom request header
+# Custom request headers
 
-This fork adds one configurable HTTP request header per music server, for
-servers behind a reverse proxy or SSO gateway that authenticates every request
-with a static header (an API key, a shared secret, a gateway token).
+This fork adds up to eight configurable HTTP request headers per music server,
+for servers behind a reverse proxy or SSO gateway that authenticates every
+request with static headers (API keys, shared secrets, gateway tokens).
 
 It is configured during onboarding under **Credentials → Custom request
-header**, and later in **Settings → Server → Custom request header**.
+headers**, and later in **Settings → Server → Custom request headers**. Each
+row is one name/value pair; **Add header** appends another.
+
+## Authentik
+
+A typical Authentik forward-auth setup needs two headers, for example:
+
+| Name | Value |
+| --- | --- |
+| `X-Authentik-Username` | the username your outpost expects |
+| `X-Authentik-Groups` | the group or pipe-separated group list |
+
+Authentik's outpost normally *sets* those headers after SSO; only configure
+them on the client if your proxy configuration explicitly expects the client
+to send them. If the outpost trusts client-supplied identity headers, make sure
+it strips them from incoming requests — otherwise anyone can forge them.
+`Authorization` remains reserved for the app's own credentials (provider token
+or the reverse-proxy Basic-auth fields), so a Bearer token cannot be added as a
+custom header.
 
 ## What it sends
 
-The header is attached to every request made against that server:
+The headers are attached to every request made against that server:
 
 - sign-in and the connection test, including Jellyfin Quick Connect and the
   Plex server verification after PIN approval;
@@ -17,29 +35,36 @@ The header is attached to every request made against that server:
 - audio streams and the engine's now-playing artwork;
 - cover art drawn by the app.
 
-It is **not** sent to anything that is not the user's server: not to plex.tv,
-not to ListenBrainz, Last.fm, LRCLIB, Deezer, MusicBrainz, not to artwork hosted
-on Cover Art Archive or a user-supplied URL.
+They are **not** sent to anything that is not the user's server: not to
+plex.tv, not to ListenBrainz, Last.fm, LRCLIB, Deezer, MusicBrainz, not to
+artwork hosted on Cover Art Archive or a user-supplied URL.
 
 ## Security properties
 
-- **The value is a secret and is stored like one.** It lives in the iOS
-  Keychain / Android Keystore as `customHeaderValue`, never in Redux or MMKV.
-  The `Server` record carries only the header *name*.
-- **The value is never logged and never put in a URL.** Requests carry it in an
-  HTTP header; the app has no code path that prints it.
+- **Values are secrets and are stored like ones.** The whole list lives in the
+  iOS Keychain / Android Keystore as `customHeaders`, never in Redux or MMKV.
+  The `Server` record carries only the header *names*.
+- **Values are never logged and never put in a URL.** Requests carry them in
+  HTTP headers; the app has no code path that prints them.
 - **Header injection is refused before storage.** Names must be RFC 7230 tokens;
   values may not contain CR, LF, NUL or any other control character.
 - **The app's own headers cannot be displaced.** `Host`, `Content-Length`,
   `Content-Type`, `Transfer-Encoding`, `Connection`, `Authorization`, `Cookie`
   and the other framing/hop-by-hop headers are rejected. A reverse proxy's Basic
   auth still belongs in the dedicated proxy fields.
-- **Both halves are length-bounded** (128 bytes for a name, 4096 for a value).
-- **HTTP gets a warning.** A secret sent over cleartext `http://` is readable on
-  the network; use `https://`. The app supports LAN HTTP servers, so this warns
-  rather than blocking, but HTTPS is the only safe choice for a secret.
-- **Removal is immediate and complete.** Removing the header deletes the
+- **Names are unique.** A repeated name is refused rather than sent in an order
+  nobody intended.
+- **Size is bounded.** 128 bytes per name, 4096 per value, eight headers, and
+  1900 bytes for the serialized list — the last is the practical Android
+  SecureStore value limit, because the list is one keystore entry.
+- **HTTP gets a warning.** Secrets sent over cleartext `http://` are readable
+  on the network; use `https://`. The app supports LAN HTTP servers, so this
+  warns rather than blocking, but HTTPS is the only safe choice for a secret.
+- **Removal is immediate and complete.** Removing the headers deletes the
   keystore entry; removing the server deletes every credential scope it owns.
+- **The first single-header format still works.** An install upgrading from the
+  earlier APK keeps its one header until the next save, which migrates it into
+  the list and deletes the old keystore entry.
 
 ## Maintenance
 

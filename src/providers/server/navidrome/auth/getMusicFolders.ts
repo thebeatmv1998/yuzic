@@ -17,7 +17,7 @@ export async function getMusicFolders(server: Server): Promise<{ id: string; nam
 
   try {
     const res = await serverFetch(`${cleanUrl}/rest/getMusicFolders.view?${params}`, {
-      headers: subsonicRequestHeaders(undefined, server.customHeader),
+      headers: subsonicRequestHeaders(undefined, server.customHeaders),
     });
     if (!res.ok) return [];
     const data: SubsonicResponse = await res.json();

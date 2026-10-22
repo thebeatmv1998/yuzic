@@ -76,7 +76,7 @@ export const createMediaBrowserAdapter = (
   server: Server,
   brand: MediaBrowserBrand
 ): ApiAdapter => {
-  const { id: serverId, serverUrl, fallbackUrls, auth: providerAuth, basicAuth, customHeader } = server;
+  const { id: serverId, serverUrl, fallbackUrls, auth: providerAuth, basicAuth, customHeaders } = server;
   const { token, userId } = providerAuth as { token: string; userId: string };
 
   // Support new array format (parentIds) and old single-value format (parentId)
@@ -86,13 +86,13 @@ export const createMediaBrowserAdapter = (
     [];
 
   const client = createMediaBrowserClient(
-    { serverUrl, serverId, fallbackUrls, token, userId, basicAuth, customHeader },
+    { serverUrl, serverId, fallbackUrls, token, userId, basicAuth, customHeaders },
     brand
   );
 
   const clientFor = (pid: string) =>
     createMediaBrowserClient(
-      { serverUrl, serverId, fallbackUrls, token, userId, parentId: pid, basicAuth, customHeader },
+      { serverUrl, serverId, fallbackUrls, token, userId, parentId: pid, basicAuth, customHeaders },
       brand
     );
 

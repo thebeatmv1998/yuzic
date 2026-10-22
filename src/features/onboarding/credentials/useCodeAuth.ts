@@ -30,7 +30,7 @@ type Options = {
   codeAuth: CodeAuthApi | undefined;
   serverUrl: string;
   basicAuth?: BasicAuth;
-  customHeader?: CustomHeader;
+  customHeaders?: CustomHeader[];
 };
 
 /**
@@ -52,7 +52,7 @@ type Options = {
  *   and proxy credentials, and an interval that survives unmount keeps hitting
  *   a server for a flow nobody is watching.
  */
-export function useCodeAuth({ codeAuth, serverUrl, basicAuth, customHeader }: Options) {
+export function useCodeAuth({ codeAuth, serverUrl, basicAuth, customHeaders }: Options) {
   const [phase, setPhase] = useState<CodeAuthPhase>({ status: 'idle' });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,8 +62,8 @@ export function useCodeAuth({ codeAuth, serverUrl, basicAuth, customHeader }: Op
   // proxy field changes would restart the flow under the user.
   const basicAuthRef = useRef(basicAuth);
   basicAuthRef.current = basicAuth;
-  const customHeaderRef = useRef(customHeader);
-  customHeaderRef.current = customHeader;
+  const customHeadersRef = useRef(customHeaders);
+  customHeadersRef.current = customHeaders;
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
@@ -90,7 +90,7 @@ export function useCodeAuth({ codeAuth, serverUrl, basicAuth, customHeader }: Op
       const begun = await codeAuth.begin({
         serverUrl,
         basicAuth: basicAuthRef.current,
-        customHeader: customHeaderRef.current,
+        customHeaders: customHeadersRef.current,
       });
       handle = begun.handle;
       setPhase({ status: 'waiting', code: begun.code });
@@ -114,7 +114,7 @@ export function useCodeAuth({ codeAuth, serverUrl, basicAuth, customHeader }: Op
           serverUrl,
           handle,
           basicAuth: basicAuthRef.current,
-          customHeader: customHeaderRef.current,
+          customHeaders: customHeadersRef.current,
         });
       } catch (err) {
         // Approval already happened and the server is what said no, so waiting

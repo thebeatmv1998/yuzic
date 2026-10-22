@@ -40,7 +40,7 @@ export async function pollPlexPin(
   handle: string,
   serverUrl: string,
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ) {
   const pin = await accountRequest<PlexPinResponse>(`/api/v2/pins/${encodeURIComponent(handle)}`);
   if (!pin.authToken) return null;
@@ -56,7 +56,7 @@ export async function pollPlexPin(
       serverUrl,
       token: pin.authToken,
       basicAuth,
-      customHeader,
+      customHeaders,
     }).request('/library/sections');
     const user = await accountRequest<PlexUserResponse>('/api/v2/user', {
       headers: { 'X-Plex-Token': pin.authToken },

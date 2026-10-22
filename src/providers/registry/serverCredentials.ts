@@ -1,4 +1,5 @@
 import type { BasicAuth, CustomHeader, ProviderAuth, Server } from '@/providers/contracts/Server';
+import { parseStoredCustomHeaders, validateCustomHeaders } from '@/providers/http/customHeader';
 import { getCredentials, setCredential, forgetCredentials, type CredentialBundle } from '@/state/credentialCache';
 import type { CredentialScope } from '@/state/credentials';
 import { listenBrainzCredentialScope } from '@/state/redux/selectors/listenbrainzSelectors';
@@ -54,51 +55,72 @@ export async function saveServerCredentials(
   serverId: string,
   auth: ProviderAuth | undefined,
   basicAuth: BasicAuth | undefined,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Promise<{
   auth: ProviderAuth;
   basicAuth: BasicAuth | undefined;
-  customHeader: CustomHeader | undefined;
+  customHeaders: CustomHeader[] | undefined;
 }> {
   const { publicAuth, secrets } = splitSecretAuth(auth);
   const scope = serverCredentialScope(serverId);
-  const [, , , sanitizedCustomHeader] = await Promise.all([
+  const [, , , sanitizedCustomHeaders] = await Promise.all([
     secrets.password !== undefined ? setCredential(scope, 'password', secrets.password) : Promise.resolve(),
     secrets.token !== undefined ? setCredential(scope, 'token', secrets.token) : Promise.resolve(),
     basicAuth?.password ? setCredential(scope, 'proxyPassword', basicAuth.password) : Promise.resolve(),
-    saveServerCustomHeader(serverId, customHeader),
+    saveServerCustomHeaders(serverId, customHeaders),
   ]);
   return {
     auth: publicAuth,
     basicAuth: basicAuth ? { username: basicAuth.username } : undefined,
-    customHeader: sanitizedCustomHeader,
+    customHeaders: sanitizedCustomHeaders,
   };
 }
 
 /**
- * Writes (or clears) one server's custom header value and returns the half
+ * Writes (or clears) a server's custom header values and returns the halves
  * Redux may keep.
  *
  * Separate from `saveServerCredentials` because this is also what the Server
- * settings card calls when the header is changed long after onboarding: the
- * value goes to the keystore, the name goes into the `Server` record, and the
- * two are updated together so a rename cannot leave the old value behind.
- * Passing null (or a pair without a value) deletes the keystore entry rather
- * than storing an empty one.
+ * settings card calls when the headers are changed long after onboarding. The
+ * JSON array — names and values together — is one keystore entry, bounded by
+ * `MAX_CUSTOM_HEADERS_BYTES`; the Server record gets names only. The old
+ * single-header entry is deleted on every save so an upgrade cannot leave a
+ * stale secret behind.
+ *
+ * Validation is repeated here rather than trusted from the caller: this
+ * function is the last place before a value is persisted, and storing a pair
+ * that `customHeadersForRequest` will refuse would fail authentication later
+ * with nothing to point at.
  */
-export async function saveServerCustomHeader(
+export async function saveServerCustomHeaders(
   serverId: string,
-  header: CustomHeader | null | undefined
-): Promise<CustomHeader | undefined> {
+  headers: CustomHeader[] | null | undefined
+): Promise<CustomHeader[] | undefined> {
   const scope = serverCredentialScope(serverId);
-  const name = header?.name.trim();
-  const value = header?.value?.trim();
-  if (!name || !value) {
-    await setCredential(scope, 'customHeaderValue', '');
+  const rows = (headers ?? []).map(header => ({
+    name: header.name ?? '',
+    value: header.value ?? '',
+  }));
+  const result = validateCustomHeaders(rows);
+
+  // An invalid list must never be a reason to wipe a working configuration.
+  // Callers validate first, so reaching this is a bug; fail loudly instead.
+  if (!result.ok) {
+    throw new Error(`Invalid custom headers: ${result.error}`);
+  }
+  if (result.headers.length === 0) {
+    await Promise.all([
+      setCredential(scope, 'customHeaders', ''),
+      setCredential(scope, 'customHeaderValue', ''),
+    ]);
     return undefined;
   }
-  await setCredential(scope, 'customHeaderValue', value);
-  return { name };
+
+  await Promise.all([
+    setCredential(scope, 'customHeaders', JSON.stringify(result.headers)),
+    setCredential(scope, 'customHeaderValue', ''),
+  ]);
+  return result.headers.map(({ name }) => ({ name }));
 }
 
 /**
@@ -115,7 +137,24 @@ export async function saveServerCustomHeader(
  */
 export function withServerCredentials(server: Server): Server {
   const creds: CredentialBundle = getCredentials(serverCredentialScope(server.id));
-  const customHeaderValue = creds.customHeaderValue ?? server.customHeader?.value;
+  // The first fork release stored one header as a plain value. An install
+  // upgrading from it has `customHeader` but no `customHeaders`; treating it
+  // as a one-element list keeps that login working until the next save.
+  const legacyHeader = server.customHeaders ? null : server.customHeader;
+  const declared = server.customHeaders ?? (legacyHeader ? [legacyHeader] : []);
+  const legacyValue = legacyHeader
+    ? (creds.customHeaderValue ?? legacyHeader.value)
+    : undefined;
+  const storedHeaders = parseStoredCustomHeaders(creds.customHeaders);
+  const customHeaders = declared.flatMap(header => {
+    const stored = storedHeaders.find(
+      candidate => candidate.name.toLowerCase() === header.name.toLowerCase()
+    );
+    const value = stored?.value ?? header.value ?? legacyValue;
+    // No value means no header at all: sending the name with an empty value
+    // would be a different request, and one no server asked for.
+    return value ? [{ ...header, value }] : [];
+  });
   return {
     ...server,
     auth: {
@@ -133,12 +172,10 @@ export function withServerCredentials(server: Server): Server {
           password: creds.proxyPassword ?? server.basicAuth.password ?? '',
         }
       : undefined,
-    // No stored value means no header at all: sending the name with an empty
-    // value would be a different request, and one no server asked for.
-    customHeader:
-      server.customHeader && customHeaderValue
-        ? { ...server.customHeader, value: customHeaderValue }
-        : undefined,
+    customHeaders: customHeaders.length > 0 ? customHeaders : undefined,
+    // The legacy single-header field is read above and never passed on; every
+    // client now consumes `customHeaders`.
+    customHeader: undefined,
   };
 }
 

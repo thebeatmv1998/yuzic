@@ -2,7 +2,7 @@ import type { Server } from '@/providers/contracts/Server';
 import type { Provenance } from '@/domain/identity/Provenance';
 import { SERVER_PROVIDERS } from '@/providers/registry/serverConnections';
 import { withServerCredentials } from '@/providers/registry/serverCredentials';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 
 /**
  * The ephemeral request headers a track needs to be fetched, kept off the URL
@@ -57,7 +57,7 @@ export function mediaHeadersForSong(
   // requires (Plex's proxy Basic auth today).
   const liveServer = withServerCredentials(server);
   const headers: Record<string, string> = {
-    ...customHeaderForRequest(liveServer.customHeader),
+    ...customHeadersForRequest(liveServer.customHeaders),
     ...(SERVER_PROVIDERS[server.type]?.mediaAuthHeaders?.(liveServer) ?? {}),
   };
   if (Object.keys(headers).length === 0) return EMPTY;

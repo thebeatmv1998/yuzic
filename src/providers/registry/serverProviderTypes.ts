@@ -69,7 +69,7 @@ export type CodeAuthApi = {
   begin(input: {
     serverUrl: string;
     basicAuth?: BasicAuth;
-    customHeader?: CustomHeader;
+    customHeaders?: CustomHeader[];
   }): Promise<{
     code: string;
     handle: unknown;
@@ -86,7 +86,7 @@ export type CodeAuthApi = {
     serverUrl: string;
     handle: unknown;
     basicAuth?: BasicAuth;
-    customHeader?: CustomHeader;
+    customHeaders?: CustomHeader[];
   }): Promise<{ auth: ProviderAuth; username: string } | null>;
   /** How often to poll, in milliseconds. */
   pollIntervalMs: number;
@@ -138,14 +138,14 @@ export type ServerProviderConfig = {
     username: string,
     auth: ProviderAuth,
     basicAuth?: BasicAuth,
-    customHeader?: CustomHeader
+    customHeaders?: CustomHeader[]
   ) => Promise<boolean>;
   connect: (
     url: string,
     username: string,
     password: string,
     basicAuth?: BasicAuth,
-    customHeader?: CustomHeader
+    customHeaders?: CustomHeader[]
   ) => Promise<ConnectResult>;
   createAdapter: (server: Server) => ApiAdapter;
   buildCoverUrl: (server: Server, cover: CoverSource, px: number) => string | null;

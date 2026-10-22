@@ -1,6 +1,6 @@
 import type { AudioQuality, PreferredCodec } from '@/domain/playback/AudioFormat';
 import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
-import { customHeaderForRequest } from '@/providers/http/customHeader';
+import { customHeadersForRequest } from '@/providers/http/customHeader';
 import { qualityToStreamParams } from '@/providers/server/streamQuality';
 import { tryWithFailover, orderedUrls, UrlTimeoutError, isAbortError } from '@/providers/http/urlFailover';
 import { serverFetch } from '@/features/mtls/serverFetch';
@@ -24,8 +24,8 @@ interface NavidromeClientConfig {
   password: string;
   defaultParams?: Record<string, string | number>;
   basicAuth?: { username: string; password?: string };
-  /** Optional extra header sent on every request, e.g. a proxy's API key. */
-  customHeader?: CustomHeader;
+  /** Optional extra headers sent on every request, e.g. a proxy's API keys. */
+  customHeaders?: CustomHeader[];
 }
 
 const API_VERSION = "1.16.0";
@@ -107,10 +107,10 @@ function buildParams(
  */
 export function subsonicRequestHeaders(
   basicAuth?: BasicAuth,
-  customHeader?: CustomHeader
+  customHeaders?: CustomHeader[]
 ): Record<string, string> {
   return {
-    ...customHeaderForRequest(customHeader),
+    ...customHeadersForRequest(customHeaders),
     ...(basicAuth
       ? { Authorization: 'Basic ' + btoa(`${basicAuth.username}:${basicAuth.password ?? ''}`) }
       : {}),
@@ -118,7 +118,7 @@ export function subsonicRequestHeaders(
 }
 
 export function createNavidromeClient(config: NavidromeClientConfig) {
-  const { serverUrl, serverId, fallbackUrls, username, password, defaultParams, basicAuth, customHeader } = config;
+  const { serverUrl, serverId, fallbackUrls, username, password, defaultParams, basicAuth, customHeaders } = config;
   const baseUrl = serverUrl.replace(/\/+$/, "");
   const failoverHint = serverId
     ? { id: serverId, serverUrl: baseUrl, fallbackUrls }
@@ -126,7 +126,7 @@ export function createNavidromeClient(config: NavidromeClientConfig) {
   // The custom header goes in first so the credentials this client is built
   // around always win a name collision. Validation refuses `Authorization`
   // outright, so that ordering is defence in depth rather than the only guard.
-  const baseHeaders = subsonicRequestHeaders(basicAuth, customHeader);
+  const baseHeaders = subsonicRequestHeaders(basicAuth, customHeaders);
 
   let extensions: Promise<Set<string>> | null = null;
   // Token auth until the server says it cannot take it, then the password for
