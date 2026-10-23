@@ -1,0 +1,24 @@
+# Keep the build context small and reproducible. Only what the web bundle needs
+# is copied in; the native projects, installs and build output are not.
+node_modules
+dist
+.expo
+.git
+.gitignore
+.github
+.maestro
+.hermes
+.idea
+android
+ios
+fastlane
+eslint-rules
+tools
+docs
+*.log
+*.md
+!README.md
+.env*
+docker-compose*.yml
+Dockerfile
+.dockerignore

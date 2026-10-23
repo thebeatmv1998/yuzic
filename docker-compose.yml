@@ -1,0 +1,66 @@
+# yuzic, self-hosted in a browser.
+#
+# This runs only the yuzic web app. It points at the Navidrome and Downtify you
+# already run — those are not bundled, because they are already yours.
+#
+#   1. Copy .env.example to .env and set the two upstreams.
+#   2. docker compose up -d --build
+#   3. Open http://<host>:8080, connect, and enter the proxied server URL:
+#        Navidrome -> http://<host>:8080/navidrome
+#        Downtify  -> http://<host>:8080/downtify
+#
+# For HTTPS, add the TLS overlay (Caddy + automatic certificates):
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+#
+# See DOCKER.md for the whole story, and for what does and does not work on the
+# web build.
+
+services:
+  yuzic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: yuzic-web:local
+    container_name: yuzic
+    restart: unless-stopped
+    ports:
+      - "${YUZIC_PORT:-8080}:8080"
+    environment:
+      # Where the reverse proxies send traffic. `host.docker.internal` reaches
+      # services running on the Docker host itself; a service on the same
+      # compose network is addressed by its service name instead.
+      NAVIDROME_UPSTREAM: "${NAVIDROME_UPSTREAM:-http://host.docker.internal:4533}"
+      DOWNTIFY_UPSTREAM: "${DOWNTIFY_UPSTREAM:-http://host.docker.internal:8000}"
+
+      # Optional custom auth headers, injected by nginx on every request to
+      # the matching upstream (login, API and audio streams). Empty means off.
+      #
+      # Use NAME/VALUE for a quick local setup. For a real deployment use
+      # NAME/VALUE_FILE with a Docker secret instead: environment variables are
+      # visible to anyone who can run `docker inspect`.
+      NAVIDROME_HEADER_1_NAME: "${NAVIDROME_HEADER_1_NAME:-}"
+      NAVIDROME_HEADER_1_VALUE: "${NAVIDROME_HEADER_1_VALUE:-}"
+      NAVIDROME_HEADER_1_VALUE_FILE: "${NAVIDROME_HEADER_1_VALUE_FILE:-}"
+      NAVIDROME_HEADER_2_NAME: "${NAVIDROME_HEADER_2_NAME:-}"
+      NAVIDROME_HEADER_2_VALUE: "${NAVIDROME_HEADER_2_VALUE:-}"
+      NAVIDROME_HEADER_2_VALUE_FILE: "${NAVIDROME_HEADER_2_VALUE_FILE:-}"
+      DOWNTIFY_HEADER_1_NAME: "${DOWNTIFY_HEADER_1_NAME:-}"
+      DOWNTIFY_HEADER_1_VALUE: "${DOWNTIFY_HEADER_1_VALUE:-}"
+      DOWNTIFY_HEADER_1_VALUE_FILE: "${DOWNTIFY_HEADER_1_VALUE_FILE:-}"
+      DOWNTIFY_HEADER_2_NAME: "${DOWNTIFY_HEADER_2_NAME:-}"
+      DOWNTIFY_HEADER_2_VALUE: "${DOWNTIFY_HEADER_2_VALUE:-}"
+      DOWNTIFY_HEADER_2_VALUE_FILE: "${DOWNTIFY_HEADER_2_VALUE_FILE:-}"
+    # Needed on Linux for `host.docker.internal` to resolve; Docker Desktop
+    # provides it already. Harmless elsewhere.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # The container is a static file server and a reverse proxy. It needs no
+    # Linux capabilities, no privilege escalation and only writes its own
+    # cache/logs plus the generated nginx includes.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 512m
+    stop_grace_period: 30s

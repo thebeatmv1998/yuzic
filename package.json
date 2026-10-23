@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "build:web": "expo export --platform web --output-dir dist",
     "test": "jest --watchAll",
     "test:e2e": "maestro test .maestro/smoke.yaml && maestro test .maestro/common-user-flows.yaml && maestro test .maestro/detail-flows.yaml && maestro test .maestro/ratings.yaml",
     "test:e2e:smoke": "maestro test .maestro/smoke.yaml",

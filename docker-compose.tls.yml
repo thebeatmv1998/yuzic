@@ -1,0 +1,50 @@
+# HTTPS overlay: Caddy terminates TLS and proxies to the yuzic container.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d --build
+#
+# Requires Docker Compose 2.24+ for `!reset` (the yuzic port is no longer
+# published directly; only Caddy is reachable from outside).
+#
+# Set YUZIC_DOMAIN in .env to the public hostname. With a public domain and
+# ports 80/443 reachable, Caddy obtains and renews a Let's Encrypt certificate
+# automatically. For a LAN-only hostname, point YUZIC_CADDYFILE at
+# ./docker/Caddyfile.internal to use Caddy's local CA instead.
+#
+# The app itself always listens on plain 8080 inside the compose network;
+# nothing outside can reach it once this overlay is active.
+
+services:
+  yuzic:
+    ports: !reset []
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: yuzic-tls
+    restart: unless-stopped
+    depends_on:
+      yuzic:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      YUZIC_DOMAIN: "${YUZIC_DOMAIN:-localhost}"
+    volumes:
+      - "${YUZIC_CADDYFILE:-./docker/Caddyfile}:/etc/caddy/Caddyfile:ro"
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    pids_limit: 256
+    mem_limit: 256m
+
+volumes:
+  caddy_data:
+  caddy_config:

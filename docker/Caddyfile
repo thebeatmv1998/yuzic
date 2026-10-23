@@ -1,0 +1,21 @@
+# Caddy TLS front end for the public deployment.
+#
+# Caddy obtains and renews a Let's Encrypt certificate for YUZIC_DOMAIN as
+# soon as ports 80 and 443 are reachable. No certificate files to manage.
+#
+# The security headers (CSP, HSTS, ...) are emitted by nginx. Caddy only
+# terminates TLS, forwards the original scheme so nginx can turn on HSTS, and
+# removes the upstream Server banners.
+{
+	admin off
+}
+
+{$YUZIC_DOMAIN:localhost} {
+	encode zstd gzip
+
+	reverse_proxy yuzic:8080 {
+		header_up X-Real-IP {remote_host}
+		header_down -Server
+		header_down -X-Powered-By
+	}
+}
