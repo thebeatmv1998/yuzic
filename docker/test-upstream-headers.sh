@@ -58,6 +58,12 @@ expect_ok "$tmp/one" \
 expect_line "$tmp/one/navidrome.conf" 'proxy_set_header X-Api-Key "abc123";'
 [ ! -s "$tmp/one/downtify.conf" ] || fail 'Navidrome header leaked into Downtify'
 
+mkdir "$tmp/underscore"
+expect_ok "$tmp/underscore" \
+    NAVIDROME_HEADER_1_NAME=X_Api_Key \
+    NAVIDROME_HEADER_1_VALUE='abc123'
+expect_line "$tmp/underscore/navidrome.conf" 'proxy_set_header X_Api_Key "abc123";'
+
 mkdir "$tmp/two"
 expect_ok "$tmp/two" \
     NAVIDROME_HEADER_1_NAME=CF-Access-Client-Id \

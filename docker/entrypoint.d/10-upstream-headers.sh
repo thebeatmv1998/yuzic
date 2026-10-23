@@ -40,7 +40,7 @@ validate_name() {
     [ "${#name}" -ge 1 ] || return 1
     [ "${#name}" -le 64 ] || return 1
     case "$name" in
-        *[!A-Za-z0-9-]*) return 1 ;;
+        *[!A-Za-z0-9_-]*) return 1 ;;
     esac
 
     # Hop-by-hop, framing and proxy headers must stay under nginx's control.
@@ -107,7 +107,7 @@ write_upstream_headers() {
             value=$(cat "$value_file")
         fi
 
-        validate_name "$name" || fail "$prefix header $n: invalid NAME (allowed: A-Z a-z 0-9 -, max 64; reserved names are rejected)"
+        validate_name "$name" || fail "$prefix header $n: invalid NAME (allowed: A-Z a-z 0-9 _ -, max 64; reserved names are rejected)"
         validate_value "$value" || fail "$prefix header $n: invalid VALUE (printable ASCII, no quotes, backslash, dollar, semicolon or braces)"
 
         printf 'proxy_set_header %s "%s";\n' "$name" "$value" >> "$tmp"

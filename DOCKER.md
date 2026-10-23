@@ -83,8 +83,8 @@ without the browser ever seeing the secret.
 
 ### Configure it
 
-Set the name/value pair in `.env`. Names may contain letters, digits and `-`,
-up to 64 characters. Values are printable ASCII, up to 4096 characters, and
+Set the name/value pair in `.env`. Names may contain letters, digits, `-` and
+`_`, up to 64 characters. Values are printable ASCII, up to 4096 characters, and
 must not contain `"`, `\`, `$`, `;`, `{` or `}`. Hop-by-hop headers, `Host`,
 `Content-*`, `Cookie` and `X-Forwarded-*` are rejected. Two headers per
 upstream are supported.
