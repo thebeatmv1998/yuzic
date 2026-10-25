@@ -827,7 +827,8 @@
       "serverUrlRequired": "サーバーURLを入力してください。",
       "serverConnectionFailed": "サーバーに接続できませんでした。",
       "missingCredentials": "認証情報またはサーバーURLがありません。",
-      "serverErrorStatus": "サーバーが {{status}} を返しました"
+      "serverErrorStatus": "サーバーが {{status}} を返しました",
+      "insecureHttp": "{{host}} への平文 HTTP は拒否されます。HTTPS またはプライベートネットワークのアドレスを使用してください。"
     },
     "address": {
       "title": "サーバーアドレス",
@@ -843,6 +844,7 @@
       "httpDesc": "非暗号化",
       "unreachable": "このアドレスのサーバーに接続できませんでした。アドレスとポートを確認してください。",
       "notThisServer": "このアドレスは応答しましたが、{{server}} ではありません。",
+      "insecure": "平文 HTTP はローカル/プライベートサーバーにのみ許可されています。公開アドレスには HTTPS を使用してください。",
       "continueAnyway": "このまま続ける",
       "untrustedCertificate": "このサーバーの証明書はデバイスに信頼されていません。自分で発行した場合は、その認証局の証明書をこのデバイスにインストールしてからもう一度お試しください。"
     },
@@ -852,6 +854,7 @@
       "usernamePlaceholder": "ユーザー名",
       "passwordPlaceholder": "パスワード",
       "missingCredentials": "ユーザー名とパスワードを入力してください。",
+      "insecureConnectionWarning": "認証情報は暗号化されていない HTTP で送信されます。信頼できるローカルネットワーク以外では HTTPS を使用してください。",
       "authFailed": "認証に失敗しました。",
       "apiNotResponding": "接続はできましたが、APIが応答しません。",
       "connectError": "接続中にエラーが発生しました。",

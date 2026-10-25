@@ -202,6 +202,19 @@ describe('a URL that ran out of time (#263)', () => {
   });
 });
 
+describe('UrlTimeoutError', () => {
+  it('keeps credential-bearing query strings out of the message', () => {
+    const error = new UrlTimeoutError(
+      'https://music.example/rest/stream.view?u=ari&t=secret&s=salt',
+      30_000
+    );
+
+    expect(error.message).toBe('No answer from https://music.example/rest/stream.view within 30000ms');
+    expect(error.message).not.toContain('secret');
+    expect(error.message).not.toContain('salt');
+  });
+});
+
 describe('isAbortError', () => {
   it('knows an abort by name', () => {
     expect(isAbortError(Object.assign(new Error('Aborted'), { name: 'AbortError' }))).toBe(true);

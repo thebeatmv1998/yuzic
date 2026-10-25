@@ -1,7 +1,9 @@
 import { MediaBrowserBrand } from "../brand";
 import { mediaBrowserAuthHeaders } from "../clientHeader";
 import { customHeadersForRequest } from '@/providers/http/customHeader';
+import { InsecureUrlError } from '@/providers/http/urlPolicy';
 import type { BasicAuth, CustomHeader } from '@/providers/contracts/Server';
+import i18n from '@/i18n';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
 type ConnectResult =
@@ -57,7 +59,13 @@ export async function connect(
       token,
       userId,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof InsecureUrlError) {
+      return {
+        success: false,
+        message: i18n.t('onboarding.connect.insecureHttp', { host: error.host }),
+      };
+    }
     return {
       success: false,
       message: "Connection failed. Check URL or network.",

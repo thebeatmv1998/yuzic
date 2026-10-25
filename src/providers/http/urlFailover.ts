@@ -1,4 +1,5 @@
 import type { Server } from '@/providers/contracts/Server';
+import { redactUrl } from './urlPolicy';
 
 /**
  * Multi-URL server failover for issue #115.
@@ -115,7 +116,9 @@ export async function tryWithFailover<T>(
  */
 export class UrlTimeoutError extends Error {
   constructor(url: string, ms: number) {
-    super(`No answer from ${url} within ${ms}ms`);
+    // The URL may carry Subsonic/Jellyfin/Plex auth in its query string; this
+    // message is logged by callers, so only origin + path is kept.
+    super(`No answer from ${redactUrl(url)} within ${ms}ms`);
     this.name = 'UrlTimeoutError';
   }
 }

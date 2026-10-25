@@ -21,6 +21,7 @@ import Touchable from '@/components/Touchable';
 import { useRadius } from '@/features/theme/useRadius';
 import { useCodeAuth } from './useCodeAuth';
 import CustomHeaderSection from './CustomHeaderSection';
+import InsecureConnectionWarning from './InsecureConnectionWarning';
 import { useCustomHeaderRows } from './useCustomHeaderRows';
 
 export default function Credentials() {
@@ -225,6 +226,10 @@ export default function Credentials() {
                 <View style={styles.mainContent}>
                     <Text style={styles.title}>{t('onboarding.credentials.title')}</Text>
                     <Text style={styles.subtitle}>{t('onboarding.credentials.subtitle')}</Text>
+
+                    {typeof serverUrl === 'string' && serverUrl.startsWith('http://') && (
+                        <InsecureConnectionWarning />
+                    )}
 
                     {inCodeAuth ? (
                         // ── Code sign-in panel ───────────────────────────────

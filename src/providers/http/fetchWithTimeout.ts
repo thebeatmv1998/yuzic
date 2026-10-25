@@ -1,3 +1,5 @@
+import { assertAllowedUrl } from './urlPolicy';
+
 /**
  * Default ceiling for a single integration request. The core server clients
  * already cap their requests; integrations used to have no ceiling at all, so a
@@ -27,6 +29,10 @@ export async function fetchWithTimeout(
   input: string,
   { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, signal, ...init }: FetchWithTimeoutOptions = {}
 ): Promise<Response> {
+  // Integrations reach the same self-hosted servers (Lidarr, slskd, MusicBrainz
+  // mirrors), so they share the transport rule rather than each re-implementing
+  // it. Public APIs are HTTPS and pass through unchanged.
+  assertAllowedUrl(input);
   const controller = new AbortController();
   let timedOut = false;
 

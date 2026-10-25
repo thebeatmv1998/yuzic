@@ -17,8 +17,10 @@
  * hitting this had no way to learn what was actually wrong.
  */
 
+import { InsecureUrlError } from '@/providers/http/urlPolicy';
+
 export type AddressProbe = {
-  kind: 'ok' | 'unreachable' | 'notThisServer' | 'untrustedCertificate';
+  kind: 'ok' | 'unreachable' | 'notThisServer' | 'untrustedCertificate' | 'insecure';
 };
 
 /**
@@ -76,5 +78,6 @@ export function certificateRejected(error: unknown): boolean {
 
 /** The verdict for a probe whose fetch threw. */
 export function probeFailure(error: unknown): AddressProbe {
+  if (error instanceof InsecureUrlError) return { kind: 'insecure' };
   return { kind: certificateRejected(error) ? 'untrustedCertificate' : 'unreachable' };
 }

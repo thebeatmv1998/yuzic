@@ -17,7 +17,7 @@
         ],
         "UISupportsCarPlay": true,
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsLocalNetworking": true
         },
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "Yuzic uses your local network to discover DLNA speakers and displays to cast music to."
@@ -31,6 +31,7 @@
       "permissions": [
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
+      "allowBackup": false,
       "package": "com.arinora.rawarr"
     },
     "web": {
@@ -65,7 +66,10 @@
       ],
       "yuzic-engine",
       "./plugins/withUserCaTrust",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font",
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

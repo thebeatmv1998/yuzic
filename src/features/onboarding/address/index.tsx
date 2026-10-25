@@ -29,7 +29,7 @@ export default function Address() {
     const [scheme, setScheme] = useState<Scheme>('https');
     const [host, setHost] = useState('');
     const [checking, setChecking] = useState(false);
-    const [problem, setProblem] = useState<'unreachable' | 'notThisServer' | 'untrustedCertificate' | null>(null);
+    const [problem, setProblem] = useState<'unreachable' | 'notThisServer' | 'untrustedCertificate' | 'insecure' | null>(null);
     const provider = type ? getServerProvider(type) : undefined;
 
     const schemeSheetRef = useSheetRef();
@@ -114,10 +114,14 @@ export default function Address() {
                                 <Text style={styles.problemText}>
                                     {t(`onboarding.address.${problem}`, { server: provider?.label })}
                                 </Text>
-                                {/* The check can be wrong about an unusual setup, so it never has the last word. */}
-                                <Touchable testID="address-continue-anyway" onPress={goToCredentials}>
-                                    <Text style={styles.continueText}>{t('onboarding.address.continueAnyway')}</Text>
-                                </Touchable>
+                                {/* The check can be wrong about an unusual setup, so it never has the last word.
+                                    The exception is an insecure public HTTP URL: continuing would only
+                                    move the refusal to the credentials request. */}
+                                {problem !== 'insecure' && (
+                                    <Touchable testID="address-continue-anyway" onPress={goToCredentials}>
+                                        <Text style={styles.continueText}>{t('onboarding.address.continueAnyway')}</Text>
+                                    </Touchable>
+                                )}
                             </View>
                         )}
                     </View>

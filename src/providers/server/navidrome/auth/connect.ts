@@ -2,6 +2,7 @@ import { buildTokenParams, subsonicRequestHeaders } from "../client";
 import { SubsonicResponse } from "../types";
 import type { BasicAuth, CustomHeader } from "@/providers/contracts/Server";
 import i18n from '@/i18n';
+import { InsecureUrlError } from '@/providers/http/urlPolicy';
 import { serverFetch } from '@/features/mtls/serverFetch';
 
 const API_VERSION = "1.16.0";
@@ -74,7 +75,13 @@ export async function connect(
       success: false,
       message: response?.error?.message ?? i18n.t('onboarding.credentials.authFailed'),
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof InsecureUrlError) {
+      return {
+        success: false,
+        message: i18n.t('onboarding.connect.insecureHttp', { host: error.host }),
+      };
+    }
     return {
       success: false,
       message: i18n.t('onboarding.connect.serverConnectionFailed'),

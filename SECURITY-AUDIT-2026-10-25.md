@@ -61,26 +61,56 @@ exposure through URLs/logs, an exported media service, backup, and repo hygiene*
 7. **The exported playback service accepts every controller**, so any local app can
    browse library metadata and control playback. (Medium/Low)
 
+### Remediation applied during this audit
+
+- **SEC-02:** signing-directory ACL restricted to the current user, SYSTEM and
+  Administrators; inherited `Authenticated Users: Modify` / `Users: Read` removed.
+- **SEC-01:** `src/providers/http/urlPolicy.ts` refuses `http://` to public hosts at
+  both `serverFetch` and `fetchWithTimeout`; HTTP remains available for loopback,
+  RFC1918, link-local, CGNAT/Tailscale and local suffix hosts. iOS ATS changed from
+  `NSAllowsArbitraryLoads` to `NSAllowsLocalNetworking`. The Android manifest keeps
+  `usesCleartextTraffic="true"` because the OS cannot express a private-IP allowlist;
+  the app-level gate is what blocks public HTTP. Credentials screens show an HTTP
+  warning explicitly.
+- **SEC-03:** release signing now throws unless all four signing environment
+  variables are present; the public `debug.keystore` fallback is gone.
+- **SEC-04:** `UrlTimeoutError` messages redact query strings, and a production-only
+  Babel plugin removes `console.*` calls. `babel-preset-expo` was added to
+  `dependencies` so this still works with `npm ci --omit=dev`.
+- **SEC-06:** `android:allowBackup="false"` and `android:fullBackupContent="false"`
+  in the manifest, plus `android.allowBackup: false` in `app.json`.
+- **SEC-07:** `yuzic-engine` patched via `patch-package` so `PlaybackService`
+  rejects controllers that are neither the app itself nor a trusted/system media
+  controller. `patches/yuzic-engine+1.2.5.patch` is applied on install.
+- **SEC-12:** v3/v4 APK signing enabled.
+- **SEC-14:** Dependabot alerts and security updates enabled; branch protection
+  (no force-push/deletion) added to `custom-request-header` and `master`.
+- **SEC-15/16:** Expo SDK 55 patch updates applied (Expo 55.0.32, expo-router
+  55.0.18, React Native patch set, reanimated/worklets aligned) and
+  `npm audit fix` reduced production-labeled advisories from 31 (1 critical) to 13
+  (0 critical). The remaining runtime-relevant issue is the query-string DoS that
+  needs Expo Router 58.
+
 ## Findings
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| SEC-01 | High | Cleartext HTTP globally enabled; credentials/tokens can be transmitted unencrypted | Open |
-| SEC-02 | High | Release signing key + plaintext password readable/modifiable by all local users | **ACL fixed**; rotate if shared |
-| SEC-03 | High/Medium | Release signing silently falls back to the public debug keystore | Open |
-| SEC-04 | Medium | Long-lived tokens in URLs; release logging can leak them | Open |
-| SEC-05 | Medium | Global trust of user-installed CAs on Android | Open |
-| SEC-06 | Medium | `allowBackup=true` with no backup/data-extraction rules | Open |
-| SEC-07 | Medium/Low | Exported `PlaybackService` accepts all controllers | Open (engine) |
-| SEC-08 | Medium/Low | R8/minify and resource shrinking disabled in release | Open |
-| SEC-09 | Low | No `FLAG_SECURE`; credentials/settings screens can be screenshotted | Open |
+| SEC-01 | High | Cleartext HTTP globally enabled; credentials/tokens can be transmitted unencrypted | **Mitigated** (URL policy + iOS ATS); Android flag residual for LAN |
+| SEC-02 | High | Release signing key + plaintext password readable/modifiable by all local users | **Fixed (ACL)**; rotate if shared |
+| SEC-03 | High/Medium | Release signing silently falls back to the public debug keystore | **Fixed** (release fails without env) |
+| SEC-04 | Medium | Long-lived tokens in URLs; release logging can leak them | **Mitigated** (URL redaction + console strip) |
+| SEC-05 | Medium | Global trust of user-installed CAs on Android | Open (accepted for private CA support) |
+| SEC-06 | Medium | `allowBackup=true` with no backup/data-extraction rules | **Fixed** (`allowBackup=false`) |
+| SEC-07 | Medium/Low | Exported `PlaybackService` accepts all controllers | **Fixed** (engine patch) |
+| SEC-08 | Medium/Low | R8/minify and resource shrinking disabled in release | Open (needs device testing) |
+| SEC-09 | Low | No `FLAG_SECURE`; credentials/settings screens can be screenshotted | Open (UX trade-off) |
 | SEC-10 | Low | `Math.random()` used for Subsonic token salt | Open |
-| SEC-11 | Low | `minSdk 24` includes old Android TLS/security stacks | Open |
-| SEC-12 | Low | APK uses APK Signature Scheme v2 only (no v3/v4) | Open |
-| SEC-13 | Low | JitPack repository added globally to all Gradle projects | Open |
-| SEC-14 | Low/Medium | No branch protection; Dependabot alerts/updates disabled; Actions not SHA-pinned | Open |
-| SEC-15 | Low | Runtime DoS advisories in `expo-router`/`@react-navigation/core` via query parsing | Open (SDK-limited) |
-| SEC-16 | Info | Most `npm audit` critical/high findings are build/dev-only; 2 moderate are runtime | Accepted/monitor |
+| SEC-11 | Low | `minSdk 24` includes old Android TLS/security stacks | Open (compatibility decision) |
+| SEC-12 | Low | APK uses APK Signature Scheme v2 only (no v3/v4) | **Fixed** (v3/v4 enabled) |
+| SEC-13 | Low | JitPack repository added globally to all Gradle projects | Accepted (required by expo-blur/turbo-image) |
+| SEC-14 | Low/Medium | No branch protection; Dependabot alerts/updates disabled; Actions not SHA-pinned | **Partially fixed** (Dependabot + protection); SHA pinning open |
+| SEC-15 | Low | Runtime DoS advisories in `expo-router`/`@react-navigation/core` via query parsing | **Partially fixed** (Expo 55.0.18); SDK 58 open |
+| SEC-16 | Info | Most `npm audit` findings are build/dev-only; 2 moderate are runtime | 13 production-labeled, 0 critical |
 | SEC-17 | Info | CVE-2026-91403 (Oracle JSSE) not applicable; build JDK only | Update hygiene |
 | SEC-18 | Info | Server/Cloudflare/Authentik configuration not directly audited; 403 is edge-side | Deployment checklist |
 
@@ -96,7 +126,10 @@ exposure through URLs/logs, an exported media service, backup, and repo hygiene*
   `<base-config cleartextTrafficPermitted="true">`
 - `app.json:20` — iOS `NSAllowsArbitraryLoads: true`
 - `serverFetch` and the engine accept both `http` and `https`; only the proxy and
-  custom-header fields display an HTTP warning.
+  custom-header fields displayed an HTTP warning. After remediation, both transports
+  refuse public HTTP through `urlPolicy.ts`, iOS ATS only permits local networking,
+  and the credentials screen warns explicitly. The Android manifest flag remains
+  because the OS cannot express a private-IP allowlist.
 
 **Impact**
 
@@ -216,9 +249,10 @@ Verify the signing certificate in CI and in `release-on-version-bump.yml`.
 - `src/providers/http/urlFailover.ts:116-119` — `UrlTimeoutError` message includes the
   full URL.
 - `src/providers/server/navidrome/auth/getMusicFolders.ts:39` — `console.error(... error)`.
-- The release bundle contains `console.error`, `console.warn`, the Navidrome log
-  string and the `No answer from` message; console is not stripped by the current
-  Babel/Expo configuration.
+- Before remediation the release bundle contained `console.error`, `console.warn`,
+  the Navidrome log string and the `No answer from` message; console was not stripped
+  by the then-current Babel/Expo configuration. A production-only Babel plugin now
+  removes it, and `UrlTimeoutError` redacts query strings.
 - `src/features/player/DlnaContext.tsx` logs cast errors and response bodies; stream
   URLs with tokens can reach LAN cast devices and logs.
 
@@ -276,8 +310,11 @@ private server.
 
 **Evidence**
 
-`android/app/src/main/AndroidManifest.xml:13` — `android:allowBackup="true"`.
-No `android:fullBackupContent` or `android:dataExtractionRules` is declared.
+Before remediation: `android/app/src/main/AndroidManifest.xml:13` —
+`android:allowBackup="true"`; no `android:fullBackupContent` or
+`android:dataExtractionRules` was declared. After remediation:
+`allowBackup="false"` and `fullBackupContent="false"`, with the same setting in
+`app.json` for prebuild.
 
 **Impact**
 
@@ -308,8 +345,10 @@ Merged manifest (engine):
 ```
 
 `node_modules/yuzic-engine/android/src/main/java/dev/yuzic/engine/PlaybackService.kt:328-367`
-returns `AcceptedResultBuilder` for every `MediaSession.ControllerInfo`, granting
-timeline/metadata/play/seek/set-media commands.
+returned `AcceptedResultBuilder` for every `MediaSession.ControllerInfo`, granting
+timeline/metadata/play/seek/set-media commands. After remediation the engine patch
+rejects controllers that are not the app itself, trusted, or a listed system media
+package.
 
 **Impact**
 
@@ -412,7 +451,8 @@ Raise `minSdk` to 26 or 28 if the user base allows; otherwise document the risk.
 
 **Evidence**
 
-`apksigner verify --verbose` reports v2 `true`, v3/v3.1/v4 `false`.
+Before remediation `apksigner verify --verbose` reported v2 `true`, v3/v3.1/v4
+`false`. v3 and v4 signing are now enabled for the next build.
 
 **Impact**
 
@@ -454,8 +494,9 @@ alternative if one becomes available. Do not remove the repository without check
 
 **Evidence**
 
-- No branch protection on `master` or `custom-request-header`.
-- Default branch is `custom-request-header`.
+- Before remediation: no branch protection on `master` or `custom-request-header`.
+  Protection (no force-push/deletion) is now enabled on both; default branch remains
+  `custom-request-header`.
 - Actions: `allowed_actions: all`, `sha_pinning_required: false`.
 - Dependabot alerts and security updates: **disabled**.
 - Secret scanning and push protection: **enabled**.
@@ -505,44 +546,37 @@ upgrade (SDK 58 / query-string 9), currently outside SDK 55.
 
 ### SEC-16 — Dependency audit (Info)
 
-`npm audit --omit=dev` reports **31 production-labeled** issues:
+After `npx expo install --fix` and `npm audit fix`, `npm audit --omit=dev` reports
+**13 production-labeled** issues:
 
-- 1 critical, 15 high, 14 moderate, 1 low
-
-`npm audit` (including dev) reports **34**: 1 critical, 17 high, 14 moderate, 2 low.
+- **0 critical**, 6 high, 7 moderate, 0 low
+  (down from 31 / 1 critical before remediation)
 
 **Most are not shipped in the Android app.** Classification:
 
 | Package / advisory | Severity | Runtime in Android APK? | Path |
 |---|---|---|---|
-| `shell-quote` | Critical | No (dev) | `react-devtools-core` |
 | `@expo/cli`, `node-forge`, `@expo/code-signing-certificates` | High | No (build) | Expo CLI |
-| `@xmldom/xmldom`, `xcode` | High | No (build) | Expo config plugins |
-| `postcss`, `source-map-js` | High | No (build) | Metro/Expo CLI |
-| `ws` | High | No (dev/build) | Metro/dev middleware |
-| `compression`, `browserslist`, `brace-expansion` | High | No (build) | Expo CLI/Babel |
-| `js-yaml` | High | No (build) | ESLint/Expo CLI |
 | `image-size` | High | No (build) | Metro |
 | `zod` | High | No (build) | Expo CLI |
-| `expo` | High | **No** — the advisory is in its CLI subtree | `@expo/cli` |
-| `follow-redirects`, `phin`, `qs` | Moderate | No on native; **web-only** via `node-vibrant` | `react-native-image-colors` web path |
-| `expo-router`, `@react-navigation/core`, `query-string`, `decode-uri-component` | Moderate | **Yes (DoS)** | URL/query parsing |
-| `uuid` | Moderate | No (build) | `xcode` |
-| `@babel/core` | Low | No (build) | Babel |
+| `expo` | High | **No** - the advisory is in its CLI subtree | `@expo/cli` |
+| `@jimp/core`, `@jimp/custom`, `file-type`, `phin` | Moderate | No on native; **web-only** via `node-vibrant` | `react-native-image-colors` web path |
+| `expo-router`, `query-string`, `decode-uri-component` | Moderate | **Yes (DoS)** | URL/query parsing |
 
 The release bundle contains no `shell-quote`, `node-forge`, `postcss`, `js-yaml`,
 `xmldom`, `image-size`, `compression` or `browserslist` markers. The Android build
 resolves `react-native-image-colors` to its native module, not the web `node-vibrant`
 path.
 
-**Recommendation**
+**Applied / remaining**
 
-- Run `npm audit fix` for non-breaking build-time updates, then `npx expo install --fix`
-  for Expo SDK 55 patch updates (currently 55.0.23 → 55.0.32, React Native 0.83.4 →
-  0.83.10, expo-router 55.0.13 → 55.0.18).
-- Plan the SDK 58 / Expo Router upgrade for the query-string advisory.
+- Applied: Expo SDK 55 patch updates (Expo 55.0.32, expo-router 55.0.18, reanimated/
+  worklets aligned) and non-breaking `npm audit fix`.
+- Remaining: the `expo-router`/`query-string` DoS needs Expo Router 58 (SDK 58 major
+  upgrade); plan and test it separately.
 - Add Dependabot/OSV-Scanner and a Gradle dependency check (OWASP Dependency-Check or
   Gradle version catalog + Renovate). npm audit does not cover Maven/AndroidX.
+- Dependabot alerts/security updates are now enabled in the fork.
 
 ---
 
@@ -612,33 +646,35 @@ app UA, or — with Zero Trust Access — a service token (`CF-Access-Client-Id`
 
 ## Remediation roadmap
 
-**Immediate**
+**Applied in this audit**
 
-1. Keep the fixed signing-key ACL; rotate the key if the build machine was shared or
-   compromised.
-2. Fail release builds when signing env vars are missing; never use the debug keystore.
-3. Block credentials over `http://`, and scope cleartext to private hosts.
-4. Redact URLs in errors and strip console logs from release.
-5. Disable app backup or add strict backup exclusion rules.
-6. Restrict `PlaybackService` controllers to trusted/system media apps.
-7. Enable Dependabot alerts/security updates and branch protection.
+1. Signing-directory ACL restricted; rotate the key if the build machine was shared.
+2. Release builds fail when signing env vars are missing; debug fallback removed.
+3. Public HTTP refused at both transports; iOS ATS narrowed; credential warning added.
+4. URL redaction and production console stripping.
+5. App backup disabled.
+6. `PlaybackService` controllers restricted via `patch-package`.
+7. Dependabot alerts/security updates and branch protection enabled.
+8. Expo SDK 55 patch updates and non-breaking `npm audit fix`; v3/v4 signing enabled.
 
-**Short term**
+**Remaining**
 
-1. Apply Expo SDK 55 patch updates (`npx expo install --fix`) and test.
-2. Enable R8/resource shrinking; verify with the Maestro suites.
-3. Enable v3/v4 APK signing.
-4. Raise `minSdk` if the user base permits.
-5. Replace `Math.random` salt with a CSPRNG.
-6. Add `FLAG_SECURE` to credential screens.
+1. Enable R8/resource shrinking and test on a device.
+2. Raise `minSdk` if the user base permits.
+3. Replace the `Math.random` salt with a CSPRNG.
+4. Add `FLAG_SECURE` to the credential/settings screens.
+5. Scope user-CA trust or add per-server pinning/mTLS.
+6. Plan the Expo Router 58 / SDK 58 upgrade for the query-string DoS.
+7. Pin GitHub Actions to commit SHAs and enable the remaining secret-scanning
+   options (non-provider patterns, validity checks).
+8. Header-based auth where the server supports it; reduce token URLs.
 
 **Medium term**
 
 1. Per-server certificate pinning or mandatory mTLS for self-hosted servers.
-2. Header-based authentication where the server supports it; reduce token URLs.
-3. Cloudflare/Authentik hardening and log redaction.
-4. SAST (Semgrep), MobSF, and Gradle dependency scanning in CI.
-5. Penetration test on a physical device against a staging server.
+2. Cloudflare/Authentik hardening and log redaction.
+3. SAST (Semgrep), MobSF, and Gradle dependency scanning in CI.
+4. Penetration test on a physical device against a staging server.
 
 ## Limitations
 

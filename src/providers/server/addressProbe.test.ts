@@ -1,4 +1,5 @@
 import { certificateRejected, probeFailure } from './addressProbe';
+import { InsecureUrlError } from '@/providers/http/urlPolicy';
 
 describe('certificateRejected', () => {
   it.each([
@@ -59,5 +60,9 @@ describe('probeFailure', () => {
 
   it('still says unreachable for everything else', () => {
     expect(probeFailure(new TypeError('Network request failed'))).toEqual({ kind: 'unreachable' });
+  });
+
+  it('names a refused plain-HTTP public address', () => {
+    expect(probeFailure(new InsecureUrlError('music.example.com'))).toEqual({ kind: 'insecure' });
   });
 });

@@ -1,0 +1,65 @@
+diff --git a/node_modules/yuzic-engine/android/src/main/java/dev/yuzic/engine/PlaybackService.kt b/node_modules/yuzic-engine/android/src/main/java/dev/yuzic/engine/PlaybackService.kt
+index 2957ef6..d246cb8 100644
+--- a/node_modules/yuzic-engine/android/src/main/java/dev/yuzic/engine/PlaybackService.kt
++++ b/node_modules/yuzic-engine/android/src/main/java/dev/yuzic/engine/PlaybackService.kt
+@@ -4,6 +4,7 @@ import android.content.ContentResolver
+ import android.content.Intent
+ import android.net.Uri
+ import android.os.Bundle
++import android.os.Process
+ import androidx.media3.common.AudioAttributes
+ import androidx.media3.common.C
+ import androidx.media3.common.MediaItem
+@@ -86,6 +87,25 @@ class PlaybackService : MediaLibraryService() {
+     // other way round it compiles as far as the reader's eye and no further.
+     val DEFAULT_COMMANDS = setOf("playPause", "next", "previous", "seek")
+ 
++    /**
++     * System media surfaces that are allowed to connect even when Media3 does
++     * not mark their controller as trusted. The service has to stay exported
++     * for Android Auto/Assistant, but an exported session must not let every
++     * installed app read the browse tree or drive playback. Third-party media
++     * apps are intentionally absent; `isTrusted` covers the platform's own
++     * controllers, and the app's own controller is matched by UID.
++     */
++    internal val TRUSTED_CONTROLLER_PACKAGES = setOf(
++      "com.google.android.projection.gearhead", // Android Auto
++      "com.google.android.googlequicksearchbox", // Google Assistant
++      "com.google.android.gms", // Play services media controls
++      "com.android.bluetooth", // Bluetooth AVRCP / head units
++      "com.android.systemui", // lock screen and notification shade
++      "com.android.car.media", // Android Automotive media center
++      "com.google.android.apps.automotive.mediacenter",
++      "com.google.android.wearable.app", // Wear OS media controls
++    )
++
+     /** Which remote controls the host asked to advertise. */
+     @Volatile
+     var enabledCommands: Set<String> = DEFAULT_COMMANDS
+@@ -329,6 +349,14 @@ class PlaybackService : MediaLibraryService() {
+       session: MediaSession,
+       controller: MediaSession.ControllerInfo,
+     ): MediaSession.ConnectionResult {
++      // The service is exported for the car and the assistant, so Media3 asks
++      // every package on the device. Reject anything that is neither the app
++      // itself nor a trusted/system media controller; otherwise a local app can
++      // enumerate the library and drive playback.
++      if (!isTrustedController(controller)) {
++        return MediaSession.ConnectionResult.reject()
++      }
++
+       // The advertised command set is the host's call (`setCommands`), and it is
+       // applied here rather than remembered somewhere and applied later: this is
+       // the only moment Media3 asks, and a car that connected before the host
+@@ -367,6 +395,11 @@ class PlaybackService : MediaLibraryService() {
+         .build()
+     }
+ 
++    private fun isTrustedController(controller: MediaSession.ControllerInfo): Boolean =
++      controller.uid == Process.myUid() ||
++        controller.isTrusted ||
++        controller.packageName in TRUSTED_CONTROLLER_PACKAGES
++
+     override fun onGetLibraryRoot(
+       session: MediaLibrarySession,
+       browser: MediaSession.ControllerInfo,

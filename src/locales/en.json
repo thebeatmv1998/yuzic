@@ -828,7 +828,8 @@
       "serverUrlRequired": "Server URL is required.",
       "serverConnectionFailed": "Failed to connect to the server.",
       "missingCredentials": "Missing credentials or server URL.",
-      "serverErrorStatus": "Server returned {{status}}"
+      "serverErrorStatus": "Server returned {{status}}",
+      "insecureHttp": "Refusing plain HTTP to {{host}}. Use HTTPS or a private network address."
     },
     "address": {
       "title": "Server Address",
@@ -844,6 +845,7 @@
       "httpDesc": "Unencrypted",
       "unreachable": "Couldn't reach a server at this address. Check it, and whether it needs a port.",
       "notThisServer": "Something answered at this address, but it isn't {{server}}.",
+      "insecure": "Plain HTTP is only allowed for local/private servers. Use HTTPS for a public address.",
       "continueAnyway": "Continue anyway",
       "untrustedCertificate": "This server's certificate isn't trusted by your device. If you issued it yourself, install that authority's certificate on this device and try again."
     },
@@ -853,6 +855,7 @@
       "usernamePlaceholder": "Username",
       "passwordPlaceholder": "Password",
       "missingCredentials": "Please enter both username and password.",
+      "insecureConnectionWarning": "Your credentials will be sent unencrypted over HTTP. Use HTTPS unless this is a trusted local network.",
       "authFailed": "Authentication failed.",
       "apiNotResponding": "Server connected, but API is not responding.",
       "connectError": "An error occurred while connecting.",

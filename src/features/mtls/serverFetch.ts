@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { assertAllowedUrl } from '@/providers/http/urlPolicy';
 
 /**
  * `fetch` for the active music server, which may sit behind mutual TLS.
@@ -90,6 +91,9 @@ async function bodyToBase64(body: BodyInit | null | undefined): Promise<string |
  * which is what `fetch` does and what every caller here already handles.
  */
 export async function serverFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  // One gate for every server client: HTTPS anywhere, HTTP only on the local
+  // network. Throws InsecureUrlError before a credential can leave the device.
+  assertAllowedUrl(input);
   if (!certificateActive) return fetch(input, init);
 
   const result = await engine().clientCertificateRequest({

@@ -828,7 +828,8 @@
       "serverUrlRequired": "L'URL du serveur est requise.",
       "serverConnectionFailed": "Échec de la connexion au serveur.",
       "missingCredentials": "Identifiants ou URL du serveur manquants.",
-      "serverErrorStatus": "Le serveur a renvoyé {{status}}"
+      "serverErrorStatus": "Le serveur a renvoyé {{status}}",
+      "insecureHttp": "HTTP en clair vers {{host}} refusé. Utilisez HTTPS ou une adresse de réseau privé."
     },
     "address": {
       "title": "Adresse du serveur",
@@ -844,6 +845,7 @@
       "httpDesc": "Non chiffré",
       "unreachable": "Impossible de joindre un serveur à cette adresse. Vérifiez-la, ainsi que le port éventuel.",
       "notThisServer": "Quelque chose répond à cette adresse, mais ce n’est pas {{server}}.",
+      "insecure": "HTTP en clair n’est autorisé que pour les serveurs locaux/privés. Utilisez HTTPS pour une adresse publique.",
       "continueAnyway": "Continuer quand même",
       "untrustedCertificate": "Le certificat de ce serveur n'est pas approuvé par votre appareil. Si vous l'avez émis vous-même, installez le certificat de cette autorité sur cet appareil, puis réessayez."
     },
@@ -853,6 +855,7 @@
       "usernamePlaceholder": "Nom d'utilisateur",
       "passwordPlaceholder": "Mot de passe",
       "missingCredentials": "Veuillez saisir le nom d'utilisateur et le mot de passe.",
+      "insecureConnectionWarning": "Vos identifiants seront envoyés sans chiffrement via HTTP. Utilisez HTTPS, sauf sur un réseau local de confiance.",
       "authFailed": "Échec de l'authentification.",
       "apiNotResponding": "Serveur connecté, mais l'API ne répond pas.",
       "connectError": "Une erreur s'est produite lors de la connexion.",
