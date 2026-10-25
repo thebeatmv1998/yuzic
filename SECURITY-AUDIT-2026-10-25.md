@@ -2,10 +2,10 @@
 
 **Date:** 2026-10-25  
 **Scope:** Fork `thebeatmv1998/yuzic`, branch `custom-request-header`  
-**Source commit:** `8ca303f2` (APK built from `c0d2f359`)  
-**APK:** `Yuzic-2.17.1-custom3-arm64-v7a.apk`  
-**Package:** `com.arinora.rawarr` — version `2.17.1-custom3` (21703)  
-**APK SHA-256:** `56A6B2EE45EE40C95EEBAF0BC7E52AED2ABBDEB6CF5B394AC03B69F10F655ECD`  
+**Source commit:** `701af8ae`  
+**APK:** `Yuzic-2.17.1-custom4-arm64-v7a.apk`  
+**Package:** `com.arinora.rawarr` — version `2.17.1-custom4` (21704)  
+**APK SHA-256:** `735B597EF560D2F780FF46996532A8EB6FCD3E1BFC1E777DFE80568DC309EF0B`  
 **Signing cert SHA-256:** `1c75bd62bba2a7a62bc00ca31377aeea1ee3a9c24a48cbebd1596e4ece610882`
 
 ## Scope and method
@@ -90,6 +90,11 @@ exposure through URLs/logs, an exported media service, backup, and repo hygiene*
   `npm audit fix` reduced production-labeled advisories from 31 (1 critical) to 13
   (0 critical). The remaining runtime-relevant issue is the query-string DoS that
   needs Expo Router 58.
+
+**Verified on `custom4`:** `allowBackup=false` and `fullBackupContent=false` in the
+merged manifest; v2/v3 signatures verify; app-level log strings are absent from the
+release bundle; no Expo dev-launcher classes in the DEX; and the playback restriction
+package list is present in the compiled DEX.
 
 ## Findings
 
@@ -452,7 +457,8 @@ Raise `minSdk` to 26 or 28 if the user base allows; otherwise document the risk.
 **Evidence**
 
 Before remediation `apksigner verify --verbose` reported v2 `true`, v3/v3.1/v4
-`false`. v3 and v4 signing are now enabled for the next build.
+`false`. In `custom4`, v2 and v3 verify true and a v4 `.idsig` is produced
+alongside the APK.
 
 **Impact**
 
@@ -684,4 +690,4 @@ app UA, or — with Zero Trust Access — a service token (`CF-Access-Client-Id`
   `app.json`.
 - `npm audit` covers npm only; Maven/AndroidX/native dependencies were not checked
   against a CVE database.
-- This is a point-in-time review of commit `8ca303f2` / APK `2.17.1-custom3`.
+- This is a point-in-time review of commit `701af8ae` / APK `2.17.1-custom4`.
