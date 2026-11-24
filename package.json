@@ -78,7 +78,7 @@
     "expo-symbols": "~55.0.9",
     "expo-system-ui": "~55.0.22",
     "expo-web-browser": "~55.0.20",
-    "i18next": "^25.8.4",
+    "i18next": "^27.2.7",
     "lucide-react-native": "^0.468.0",
     "md5": "^2.3.0",
     "moti": "^0.30.0",
